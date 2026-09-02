@@ -6,14 +6,16 @@ const app = Fastify({
 
 const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
 
-if (!webhookSecret) {
-  throw new Error('TELEGRAM_WEBHOOK_SECRET is not configured')
-}
+app.get('/health', async () => ({
+  status: 'ok',
+  telegramBotTokenConfigured: Boolean(process.env.TELEGRAM_BOT_TOKEN),
+  telegramWebhookSecretConfigured: Boolean(webhookSecret),
+}))
 
 app.post('/telegram/webhook', async (request, reply) => {
   const providedSecret = request.headers['x-telegram-bot-api-secret-token']
 
-  if (providedSecret !== webhookSecret) {
+  if (!webhookSecret || providedSecret !== webhookSecret) {
     return reply.code(401).send({ error: 'Unauthorized' })
   }
 
