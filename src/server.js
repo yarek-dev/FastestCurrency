@@ -33,9 +33,9 @@ app.post('/telegram/webhook', async (request, reply) => {
 
 const port = Number(process.env.PORT) || 3000
 
-try {
-  await app.listen({ port })
-} catch (error) {
-  app.log.error(error)
-  process.exit(1)
-}
+app.listen({ port }, (err) => {
+  if (err) {
+    app.log.error(err)
+    process.exit(1)
+  }
+})
