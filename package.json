@@ -2,7 +2,6 @@
   "name": "fullstack-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --env-file=.env --watch src/server.js"
