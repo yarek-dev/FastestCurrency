@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node --env-file=.env dist/app.js",
     "dev": "tsx --env-file=.env watch src/app.ts",
     "telegram:webhook:set": "tsx --env-file=.env scripts/set-telegram-webhook.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json"
