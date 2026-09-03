@@ -2,16 +2,22 @@
   "name": "fullstack-bot",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --env-file=.env --watch src/index.js"
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "tsx --env-file=.env watch src/app.ts",
+    "telegram:webhook:set": "tsx --env-file=.env scripts/set-telegram-webhook.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "packageManager": "pnpm@11.15.0",
   "type": "module",
   "dependencies": {
     "fastify": "5.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
   }
 }

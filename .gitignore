@@ -2,6 +2,8 @@
 .env
 node_modules
 .pnpm-store
+dist
+qa-log/
 
 .vercel
 .env.local

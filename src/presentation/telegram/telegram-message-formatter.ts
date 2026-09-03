@@ -1,0 +1,119 @@
+import type { ConversionResult, RateObservation } from '../../domain/currency.js'
+import type { ParseErrorReason } from './telegram-update-parser.js'
+
+const HELP_MESSAGE = `Отправь код валюты или валютную пару.
+
+Примеры:
+EUR
+EUR USD
+100 EUR USD`
+
+function trimTrailingZeroes(value: string): string {
+  return value.replace(/\.?0+$/, '')
+}
+
+function formatNumber(value: number, maximumFractionDigits: number): string {
+  return trimTrailingZeroes(value.toFixed(maximumFractionDigits))
+}
+
+function formatConvertedAmount(value: number): string {
+  return formatNumber(value, Math.abs(value) >= 1 ? 2 : 6)
+}
+
+function formatRate(value: number): string {
+  return formatNumber(value, 6)
+}
+
+function formatObservation(observation: RateObservation | undefined): string | undefined {
+  if (!observation) {
+    return undefined
+  }
+
+  if (observation.kind === 'date') {
+    const [year, month, day] = observation.value.split('-')
+    return year && month && day
+      ? `Дата курса: ${day}.${month}.${year}`
+      : undefined
+  }
+
+  const date = new Date(observation.value)
+  if (Number.isNaN(date.getTime())) {
+    return undefined
+  }
+
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  const hours = String(date.getUTCHours()).padStart(2, '0')
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+
+  return `Данные на: ${day}.${month}.${year}, ${hours}:${minutes} UTC`
+}
+
+export function formatHelpMessage(): string {
+  return HELP_MESSAGE
+}
+
+export function formatStartMessage(): string {
+  return `Привет! Я конвертирую валюты.
+
+${HELP_MESSAGE}`
+}
+
+export function formatParseError(reason: ParseErrorReason, currencies?: string[]): string {
+  switch (reason) {
+    case 'invalid-amount':
+      return 'Некорректная сумма. Используй положительное число не больше 1000000000000, до 6 знаков после запятой и без разделителей тысяч.'
+    case 'multiple-amounts':
+      return 'Укажи только одну сумму, например: 100 EUR USD.'
+    case 'too-many-currencies':
+      return `Я нашёл несколько валют: ${currencies?.join(', ') ?? ''}. Укажи не более двух кодов, например: 100 EUR USD.`
+    case 'missing-currency':
+      return `Не нашёл код валюты.
+
+${HELP_MESSAGE}`
+  }
+}
+
+export function formatConversionResult(result: ConversionResult): string {
+  const amount = formatNumber(result.amount, 6)
+  const convertedAmount = formatConvertedAmount(result.convertedAmount)
+  const rate = formatRate(result.rate)
+  const lines: string[] = []
+
+  lines.push(`${amount} ${result.base} = ${convertedAmount} ${result.quote}`)
+
+  if (result.amount !== 1) {
+    lines.push(`Курс: 1 ${result.base} = ${rate} ${result.quote}`)
+  }
+
+  const observation = formatObservation(result.observedAt)
+  lines.push('')
+  if (observation) {
+    lines.push(observation)
+  }
+
+  lines.push(
+    result.provider === 'currency-beacon'
+      ? 'Источник: CurrencyBeacon'
+      : 'Источник: Frankfurter, дневной справочный курс',
+  )
+
+  return lines.join('\n')
+}
+
+export function formatUnsupportedCurrency(currencies: string[]): string {
+  const uniqueCurrencies = [...new Set(currencies)]
+
+  return uniqueCurrencies.length === 1
+    ? `Валюта ${uniqueCurrencies[0]} не найдена или не поддерживается.`
+    : `Одна из валют ${uniqueCurrencies.join('/')} не найдена или не поддерживается.`
+}
+
+export function formatFallbackUnavailable(base: string, quote: string): string {
+  return `Сейчас не удалось получить курс для ${base}/${quote}. Валюта может быть недоступна в резервном источнике. Попробуй позже.`
+}
+
+export function formatServiceUnavailable(): string {
+  return 'Не удалось получить курс валют. Попробуй немного позже.'
+}
