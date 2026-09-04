@@ -87,6 +87,28 @@ describe('createCurrencyBeaconProvider', () => {
     })
   })
 
+  it('requests a historical rate for the supplied date', async () => {
+    const fetchMock = stubFetch(jsonResponse({
+      response: {
+        date: '2026-09-03',
+        rates: { EUR: 0.9 },
+      },
+    }))
+    const provider = createCurrencyBeaconProvider({
+      apiKey: 'test-key',
+      logger: createLoggerSpy(),
+    })
+
+    await expect(provider('EUR', 'USD', '2026-09-03')).resolves.toMatchObject({
+      rate: 1 / 0.9,
+    })
+    const [request] = fetchMock.mock.calls[0]!
+    const url = new URL(String(request))
+    expect(url.pathname).toBe('/v1/historical')
+    expect(url.searchParams.get('date')).toBe('2026-09-03')
+    expect(url.searchParams.get('base')).toBe('USD')
+  })
+
   it('reports a ticker with a null rate as unsupported', async () => {
     stubFetch(jsonResponse({
       response: {

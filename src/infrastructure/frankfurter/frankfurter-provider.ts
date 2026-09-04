@@ -6,7 +6,7 @@ import {
 } from '../../domain/errors.js'
 
 const PROVIDER = 'frankfurter'
-const API_URL = 'https://api.frankfurter.dev/v1/latest'
+const API_BASE_URL = 'https://api.frankfurter.dev/v1'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -21,11 +21,11 @@ function parseObservation(value: unknown): RateObservation | undefined {
 }
 
 export function createFrankfurterProvider(timeoutMs = 3_000): GetExchangeRate {
-  return async (base, quote): Promise<ExchangeQuote> => {
+  return async (base, quote, date, signal): Promise<ExchangeQuote> => {
     const validationQuote = base === quote
       ? (base === 'USD' ? 'EUR' : 'USD')
       : quote
-    const url = new URL(API_URL)
+    const url = new URL(`${API_BASE_URL}/${date ?? 'latest'}`)
 
     url.searchParams.set('base', base)
     url.searchParams.set('symbols', validationQuote)
@@ -33,7 +33,9 @@ export function createFrankfurterProvider(timeoutMs = 3_000): GetExchangeRate {
     let response: Response
     try {
       response = await fetch(url, {
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+          : AbortSignal.timeout(timeoutMs),
       })
     } catch (error) {
       throw createProviderUnavailableError(

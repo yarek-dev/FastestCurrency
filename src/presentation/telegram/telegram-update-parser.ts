@@ -17,18 +17,26 @@ export type ParsedTelegramInput =
   | { kind: 'conversion'; conversion: CurrencyConversion }
   | { kind: 'error'; reason: ParseErrorReason; currencies?: string[] }
 
+function findCurrencies(text: string): string[] {
+  return [...text.matchAll(TICKER_PATTERN)]
+    .map(([ticker]) => ticker)
+    .filter((ticker) => /[A-Za-z]/.test(ticker) && !COMPLETE_NUMBER_PATTERN.test(ticker))
+    .map((ticker) => ticker.toUpperCase())
+}
+
 function parseCommand(text: string): ParsedTelegramInput | undefined {
-  const match = /^\/([a-z]+)(?:@[a-z0-9_]+)?(?:\s|$)/i.exec(text)
+  const match = /^\/([a-z]+)(?:@[a-z0-9_]+)?(?:\s+(.*))?$/is.exec(text)
 
   if (!match) {
     return undefined
   }
 
   const command = match[1]?.toLowerCase()
-  return {
-    kind: 'command',
-    command: command === 'start' ? 'start' : 'help',
+  if (command === 'start' || command === 'help') {
+    return { kind: 'command', command }
   }
+
+  return { kind: 'command', command: 'help' }
 }
 
 function hasValidPrecision(rawAmount: string): boolean {
@@ -37,18 +45,8 @@ function hasValidPrecision(rawAmount: string): boolean {
   return !fraction || fraction.length <= MAX_DECIMAL_PLACES
 }
 
-export function parseTelegramInput(text: string): ParsedTelegramInput {
-  const trimmedText = text.trim()
-  const command = parseCommand(trimmedText)
-
-  if (command) {
-    return command
-  }
-
-  const currencies = [...trimmedText.matchAll(TICKER_PATTERN)]
-    .map(([ticker]) => ticker)
-    .filter((ticker) => /[A-Za-z]/.test(ticker) && !COMPLETE_NUMBER_PATTERN.test(ticker))
-    .map((ticker) => ticker.toUpperCase())
+function parseConversionText(trimmedText: string): ParsedTelegramInput {
+  const currencies = findCurrencies(trimmedText)
 
   if (currencies.length === 0) {
     return { kind: 'error', reason: 'missing-currency' }
@@ -95,4 +93,9 @@ export function parseTelegramInput(text: string): ParsedTelegramInput {
       quote: currencies[1] ?? 'USD',
     },
   }
+}
+
+export function parseTelegramInput(text: string): ParsedTelegramInput {
+  const trimmedText = text.trim()
+  return parseCommand(trimmedText) ?? parseConversionText(trimmedText)
 }

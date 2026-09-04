@@ -5,16 +5,18 @@ const HELP_MESSAGE = `Отправь код валюты, криптовалют
 
 Примеры:
 EUR
-BTC
-100 USDT USD
-0.00000001 BTC USD`
+BTC USD
+100 USDT USD`
 
 function trimTrailingZeroes(value: string): string {
   return value.replace(/\.?0+$/, '')
 }
 
 function formatNumber(value: number, maximumFractionDigits: number): string {
-  return trimTrailingZeroes(value.toFixed(maximumFractionDigits))
+  const formatted = trimTrailingZeroes(value.toFixed(maximumFractionDigits))
+  const [integer = '', fraction] = formatted.split('.')
+  const groupedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return fraction === undefined ? groupedInteger : `${groupedInteger}.${fraction}`
 }
 
 function formatScientific(value: number): string {
@@ -91,6 +93,12 @@ ${HELP_MESSAGE}`
   }
 }
 
+function formatProvider(provider: ConversionResult['provider']): string {
+  return provider === 'currency-beacon'
+    ? '📊 CurrencyBeacon'
+    : '📊 Frankfurter, дневной справочный курс'
+}
+
 export function formatConversionResult(result: ConversionResult): string {
   const amount = formatAdaptive(result.amount, 8)
   const convertedAmount = formatConvertedAmount(result.convertedAmount)
@@ -100,11 +108,21 @@ export function formatConversionResult(result: ConversionResult): string {
     '',
   ]
 
-  lines.push(`🪙 ${amount} ${result.base} = ${convertedAmount} ${result.quote}`)
+  const roundedChange = Math.round(result.changePercent * 10) / 10
+  const indicator = roundedChange > 0
+    ? `▲ +${formatNumber(roundedChange, 1)}%`
+    : roundedChange < 0
+      ? `▼ ${formatNumber(roundedChange, 1)}%`
+      : '• 0%'
+
+  lines.push(
+    `🪙 ${amount} ${result.base} = ${result.amount === 1 ? rate : convertedAmount} ${result.quote}${result.amount === 1 ? `  ${indicator}` : ''}`,
+  )
 
   if (result.amount !== 1) {
-    lines.push(`💱 1 ${result.base} = ${rate} ${result.quote}`)
+    lines.push(`💱 1 ${result.base} = ${rate} ${result.quote}  ${indicator}`)
   }
+  lines.push(`(вчера: ${formatRate(result.previousRate)} ${result.quote})`)
 
   const observation = formatObservation(result.observedAt)
   lines.push('')
@@ -112,11 +130,7 @@ export function formatConversionResult(result: ConversionResult): string {
     lines.push(observation)
   }
 
-  lines.push(
-    result.provider === 'currency-beacon'
-      ? '📊 CurrencyBeacon'
-      : '📊 Frankfurter, дневной справочный курс',
-  )
+  lines.push(formatProvider(result.provider))
 
   return lines.join('\n')
 }

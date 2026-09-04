@@ -24,6 +24,8 @@ const conversionResult: ConversionResult = {
   base: 'EUR',
   quote: 'USD',
   rate: 1.1,
+  previousRate: 1,
+  changePercent: 10,
   convertedAmount: 110,
   provider: 'frankfurter',
 }

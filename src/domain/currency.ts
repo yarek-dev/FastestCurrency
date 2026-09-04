@@ -22,4 +22,6 @@ export interface ExchangeQuote {
 export interface ConversionResult extends ExchangeQuote {
   amount: number
   convertedAmount: number
+  previousRate: number
+  changePercent: number
 }

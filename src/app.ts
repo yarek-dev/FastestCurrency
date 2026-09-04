@@ -3,7 +3,10 @@ import Fastify from 'fastify'
 import { createConvertCurrency } from './application/use-cases/convert-currency.js'
 import { loadEnvironment } from './config/environment.js'
 import { createCurrencyBeaconProvider } from './infrastructure/currency-beacon/currency-beacon-provider.js'
-import { createFallbackProvider } from './infrastructure/exchange-rates/fallback-provider.js'
+import {
+  createExchangeRatePairProvider,
+  createFallbackProvider,
+} from './infrastructure/exchange-rates/fallback-provider.js'
 import { createFrankfurterProvider } from './infrastructure/frankfurter/frankfurter-provider.js'
 import { createFastifyLogger } from './infrastructure/logging/fastify-logger.js'
 import { healthRoutes } from './presentation/http/health-routes.js'
@@ -16,7 +19,7 @@ const app = Fastify({ logger: true })
 const logger = createFastifyLogger(app.log)
 
 const getFrankfurterRate = createFrankfurterProvider()
-const getExchangeRate = environment.currencyBeaconApiKey
+const getExchangeRatePair = environment.currencyBeaconApiKey
   ? createFallbackProvider({
       primary: createCurrencyBeaconProvider({
         apiKey: environment.currencyBeaconApiKey,
@@ -25,7 +28,7 @@ const getExchangeRate = environment.currencyBeaconApiKey
       fallback: getFrankfurterRate,
       logger,
     })
-  : getFrankfurterRate
+  : createExchangeRatePairProvider(getFrankfurterRate)
 
 if (!environment.currencyBeaconApiKey) {
   logger.error(
@@ -34,7 +37,7 @@ if (!environment.currencyBeaconApiKey) {
   )
 }
 
-const convertCurrency = createConvertCurrency(getExchangeRate)
+const convertCurrency = createConvertCurrency(getExchangeRatePair)
 const handleTelegramUpdate = createTelegramUpdateHandler({
   convertCurrency,
   logger,

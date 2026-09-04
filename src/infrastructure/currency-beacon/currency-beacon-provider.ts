@@ -8,7 +8,7 @@ import {
 } from '../../domain/errors.js'
 
 const PROVIDER = 'currency-beacon'
-const API_URL = 'https://api.currencybeacon.com/v1/latest'
+const API_BASE_URL = 'https://api.currencybeacon.com/v1'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -43,12 +43,16 @@ export function createCurrencyBeaconProvider({
   logger,
   timeoutMs = 3_000,
 }: CurrencyBeaconProviderOptions): GetExchangeRate {
-  return async (base, quote): Promise<ExchangeQuote> => {
-    const url = new URL(API_URL)
+  return async (base, quote, date, signal): Promise<ExchangeQuote> => {
+    const endpoint = date ? 'historical' : 'latest'
+    const url = new URL(`${API_BASE_URL}/${endpoint}`)
     const currencies = [...new Set([base, quote])]
     const requestedSymbols = currencies.filter((currency) => currency !== 'USD')
 
     url.searchParams.set('base', 'USD')
+    if (date) {
+      url.searchParams.set('date', date)
+    }
     if (requestedSymbols.length > 0) {
       url.searchParams.set('symbols', requestedSymbols.join(','))
     }
@@ -59,7 +63,9 @@ export function createCurrencyBeaconProvider({
         headers: {
           authorization: `Bearer ${apiKey}`,
         },
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+          : AbortSignal.timeout(timeoutMs),
       })
     } catch (error) {
       throw createProviderUnavailableError(

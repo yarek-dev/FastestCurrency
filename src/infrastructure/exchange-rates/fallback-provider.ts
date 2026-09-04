@@ -1,6 +1,8 @@
-import type { GetExchangeRate } from '../../application/ports/exchange-rate-provider.js'
+import type {
+  GetExchangeRate,
+  GetExchangeRatePair,
+} from '../../application/ports/exchange-rate-provider.js'
 import type { Logger } from '../../application/ports/logger.js'
-import type { ExchangeQuote } from '../../domain/currency.js'
 import {
   createAllProvidersFailedError,
   isProviderConfigurationError,
@@ -14,14 +16,51 @@ interface FallbackProviderOptions {
   logger: Logger
 }
 
+export function createExchangeRatePairProvider(
+  provider: GetExchangeRate,
+): GetExchangeRatePair {
+  return async (base, quote, previousDate) => {
+    const controller = new AbortController()
+    const abortOnFailure = async <T>(operation: Promise<T>): Promise<T> => {
+      try {
+        return await operation
+      } catch (error) {
+        controller.abort()
+        throw error
+      }
+    }
+    const results = await Promise.allSettled([
+      abortOnFailure(provider(base, quote, undefined, controller.signal)),
+      abortOnFailure(provider(base, quote, previousDate, controller.signal)),
+    ])
+
+    const errors = results.flatMap((result) => (
+      result.status === 'rejected' ? [result.reason] : []
+    ))
+    if (errors.length > 0) {
+      throw errors.find(isUnsupportedCurrencyError) ?? errors[0]
+    }
+
+    const [current, previous] = results
+    if (current.status !== 'fulfilled' || previous.status !== 'fulfilled') {
+      throw new Error('Exchange rate pair has an invalid state')
+    }
+
+    return { current: current.value, previous: previous.value }
+  }
+}
+
 export function createFallbackProvider({
   primary,
   fallback,
   logger,
-}: FallbackProviderOptions): GetExchangeRate {
-  return async (base, quote): Promise<ExchangeQuote> => {
+}: FallbackProviderOptions): GetExchangeRatePair {
+  const getPrimaryPair = createExchangeRatePairProvider(primary)
+  const getFallbackPair = createExchangeRatePairProvider(fallback)
+
+  return async (base, quote, previousDate) => {
     try {
-      return await primary(base, quote)
+      return await getPrimaryPair(base, quote, previousDate)
     } catch (error) {
       if (isUnsupportedCurrencyError(error)) {
         throw error
@@ -49,7 +88,7 @@ export function createFallbackProvider({
       }
 
       try {
-        return await fallback(base, quote)
+        return await getFallbackPair(base, quote, previousDate)
       } catch (fallbackError) {
         const normalizedFallbackError = toError(
           fallbackError,
