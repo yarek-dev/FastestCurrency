@@ -48,7 +48,7 @@ BTC
 
   it('formats a one-unit Frankfurter result without a redundant rate line', () => {
     expect(formatConversionResult(result())).toBe(
-      '1 EUR = 1.1 USD\n\nИсточник: Frankfurter, дневной справочный курс',
+      '🔄 EUR → USD\n\n🪙 1 EUR = 1.1 USD\n\n📊 Frankfurter, дневной справочный курс',
     )
   })
 
@@ -59,7 +59,7 @@ BTC
       convertedAmount: 3.0864195,
       provider: 'currency-beacon',
     }))).toBe(
-      '2.5 EUR = 3.09 USD\nКурс: 1 EUR = 1.234568 USD\n\nИсточник: CurrencyBeacon',
+      '🔄 EUR → USD\n\n🪙 2.5 EUR = 3.09 USD\n💱 1 EUR = 1.234568 USD\n\n📊 CurrencyBeacon',
     )
   })
 
@@ -68,7 +68,7 @@ BTC
       amount: 0.00001,
       rate: 1.234,
       convertedAmount: 0.00001234,
-    }))).toContain('0.00001 EUR = 0.00001234 USD')
+    }))).toContain('🪙 0.00001 EUR = 0.00001234 USD')
   })
 
   it('formats the minimum supported input amount without rounding it to zero', () => {
@@ -76,7 +76,7 @@ BTC
       amount: 0.00000001,
       rate: 1,
       convertedAmount: 0.00000001,
-    }))).toContain('0.00000001 EUR = 0.00000001 USD')
+    }))).toContain('🪙 0.00000001 EUR = 0.00000001 USD')
   })
 
   it('uses scientific notation when the converted amount and rate are very small', () => {
@@ -85,21 +85,21 @@ BTC
       rate: 0.000000001234,
       convertedAmount: 0.000000002468,
     }))).toContain(
-      '2 EUR = 2.468e-9 USD\nКурс: 1 EUR = 1.234e-9 USD',
+      '🪙 2 EUR = 2.468e-9 USD\n💱 1 EUR = 1.234e-9 USD',
     )
   })
 
   it('formats a provider date', () => {
     expect(formatConversionResult(result({
       observedAt: { kind: 'date', value: '2026-09-04' },
-    }))).toContain('Дата курса: 04.09.2026')
+    }))).toContain('🕘 04.09.2026')
   })
 
   it('formats a timestamp in UTC rather than the local timezone', () => {
     expect(formatConversionResult(result({
       provider: 'currency-beacon',
       observedAt: { kind: 'timestamp', value: '2026-09-04T23:07:00+03:00' },
-    }))).toContain('Данные на: 04.09.2026, 20:07 UTC')
+    }))).toContain('🕘 04.09.2026, 20:07 UTC')
   })
 
   it('omits an invalid timestamp', () => {
@@ -107,8 +107,10 @@ BTC
       observedAt: { kind: 'timestamp', value: 'not-a-date' },
     }))
 
-    expect(message).not.toContain('Данные на:')
-    expect(message).toBe('1 EUR = 1.1 USD\n\nИсточник: Frankfurter, дневной справочный курс')
+    expect(message).not.toContain('🕘')
+    expect(message).toBe(
+      '🔄 EUR → USD\n\n🪙 1 EUR = 1.1 USD\n\n📊 Frankfurter, дневной справочный курс',
+    )
   })
 
   it('formats and deduplicates unsupported currencies', () => {

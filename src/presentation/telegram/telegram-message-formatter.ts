@@ -48,7 +48,7 @@ function formatObservation(observation: RateObservation | undefined): string | u
   if (observation.kind === 'date') {
     const [year, month, day] = observation.value.split('-')
     return year && month && day
-      ? `Дата курса: ${day}.${month}.${year}`
+      ? `🕘 ${day}.${month}.${year}`
       : undefined
   }
 
@@ -63,7 +63,7 @@ function formatObservation(observation: RateObservation | undefined): string | u
   const hours = String(date.getUTCHours()).padStart(2, '0')
   const minutes = String(date.getUTCMinutes()).padStart(2, '0')
 
-  return `Данные на: ${day}.${month}.${year}, ${hours}:${minutes} UTC`
+  return `🕘 ${day}.${month}.${year}, ${hours}:${minutes} UTC`
 }
 
 export function formatHelpMessage(): string {
@@ -95,12 +95,15 @@ export function formatConversionResult(result: ConversionResult): string {
   const amount = formatAdaptive(result.amount, 8)
   const convertedAmount = formatConvertedAmount(result.convertedAmount)
   const rate = formatRate(result.rate)
-  const lines: string[] = []
+  const lines: string[] = [
+    `🔄 ${result.base} → ${result.quote}`,
+    '',
+  ]
 
-  lines.push(`${amount} ${result.base} = ${convertedAmount} ${result.quote}`)
+  lines.push(`🪙 ${amount} ${result.base} = ${convertedAmount} ${result.quote}`)
 
   if (result.amount !== 1) {
-    lines.push(`Курс: 1 ${result.base} = ${rate} ${result.quote}`)
+    lines.push(`💱 1 ${result.base} = ${rate} ${result.quote}`)
   }
 
   const observation = formatObservation(result.observedAt)
@@ -111,8 +114,8 @@ export function formatConversionResult(result: ConversionResult): string {
 
   lines.push(
     result.provider === 'currency-beacon'
-      ? 'Источник: CurrencyBeacon'
-      : 'Источник: Frankfurter, дневной справочный курс',
+      ? '📊 CurrencyBeacon'
+      : '📊 Frankfurter, дневной справочный курс',
   )
 
   return lines.join('\n')
