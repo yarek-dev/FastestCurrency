@@ -59,9 +59,7 @@ await app.register(telegramWebhookRoutes, {
   webhookSecret: environment.telegramWebhookSecret,
 })
 
-try {
-  await app.listen({ port: environment.port })
-} catch (error) {
+app.listen({ port: environment.port }).catch((error) => {
   app.log.error(error)
   process.exit(1)
-}
+})
