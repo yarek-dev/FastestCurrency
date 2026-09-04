@@ -30,9 +30,9 @@ Docker-контейнер и не каталог исходного кода. О
 | Компонент | Реализация в коде |
 | --- | --- |
 | HTTP Interface | `src/app.ts`, `src/presentation/http` |
-| Telegram Update Processor | `src/presentation/telegram` |
-| Currency Conversion Service | `src/application/use-cases/convert-currency.ts`, расчёт суммы и изменения курса к предыдущему UTC-дню, доменные типы и ошибки |
-| Exchange Rate Integration | порты `GetExchangeRate`/`GetExchangeRatePair`, получение текущего и исторического курса, отмена связанного запроса, fallback policy и адаптеры CurrencyBeacon/Frankfurter |
+| Telegram Update Processor | `src/presentation/telegram`, разбор сообщений и callback data, inline-кнопки и форматирование; `src/infrastructure/telegram` подтверждает callback через Bot API |
+| Currency Conversion Service | `src/application/use-cases`, расчёт суммы и изменения к предыдущему дню или выбранному периоду, доменные типы и ошибки |
+| Exchange Rate Integration | порты `GetExchangeRate`/`GetExchangeRatePair`, парное получение курсов с отменой и fallback либо одиночный historical-запрос к выбранному провайдеру |
 
 Конфигурация, логирование и общие функции обработки ошибок являются
 вспомогательными деталями реализации этих компонентов и отдельно не показаны.

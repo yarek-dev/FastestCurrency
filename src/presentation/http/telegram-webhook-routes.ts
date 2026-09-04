@@ -1,8 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify'
 
 import type { Logger } from '../../application/ports/logger.js'
-import type { HandleTelegramUpdate } from '../telegram/telegram-update-handler.js'
-import type { TelegramUpdate } from '../telegram/telegram-types.js'
+import type {
+  HandleTelegramUpdate,
+  TelegramUpdate,
+} from '../telegram/index.js'
 
 interface TelegramWebhookRouteOptions {
   handleUpdate: HandleTelegramUpdate
@@ -30,6 +32,29 @@ const telegramUpdateSchema = {
         },
       },
     },
+    callback_query: {
+      type: 'object',
+      additionalProperties: true,
+      properties: {
+        id: { type: 'string' },
+        data: { type: 'string' },
+        message: {
+          type: 'object',
+          additionalProperties: true,
+          properties: {
+            date: { type: 'integer' },
+            chat: {
+              type: 'object',
+              additionalProperties: true,
+              properties: {
+                id: { type: 'integer' },
+                type: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 } as const
 
@@ -51,6 +76,28 @@ const webhookResponseSchema = {
         method: { type: 'string', const: 'sendMessage' },
         chat_id: { type: 'integer' },
         text: { type: 'string' },
+        reply_markup: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['inline_keyboard'],
+          properties: {
+            inline_keyboard: {
+              type: 'array',
+              items: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['text', 'callback_data'],
+                  properties: {
+                    text: { type: 'string' },
+                    callback_data: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
   ],

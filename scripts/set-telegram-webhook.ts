@@ -40,7 +40,7 @@ async function setTelegramWebhook(): Promise<void> {
         body: JSON.stringify({
           url: webhookUrl,
           secret_token: webhookSecret,
-          allowed_updates: ['message'],
+          allowed_updates: ['message', 'callback_query'],
         }),
         signal: AbortSignal.timeout(10_000),
       },
@@ -62,7 +62,7 @@ async function setTelegramWebhook(): Promise<void> {
   }
 
   console.log(`Telegram webhook configured: ${webhookUrl}`)
-  console.log('Allowed updates: message')
+  console.log('Allowed updates: message, callback_query')
 }
 
 try {

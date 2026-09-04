@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseTelegramInput } from '../../../../src/presentation/telegram/telegram-update-parser.js'
+import { parseTelegramInput } from '../../../../src/presentation/telegram/input/telegram-update-parser.js'
 
 describe('parseTelegramInput', () => {
   it.each([

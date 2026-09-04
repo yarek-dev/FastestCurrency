@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ConversionResult } from '../../../../src/domain/currency.js'
+import type {
+  ConversionResult,
+  PeriodChangeResult,
+} from '../../../../src/domain/currency.js'
 import {
   formatConversionResult,
   formatFallbackUnavailable,
   formatHelpMessage,
   formatParseError,
+  formatPeriodChangeResult,
   formatServiceUnavailable,
   formatStartMessage,
   formatUnsupportedCurrency,
-} from '../../../../src/presentation/telegram/telegram-message-formatter.js'
+} from '../../../../src/presentation/telegram/messages/telegram-message-formatter.js'
 
 function result(overrides: Partial<ConversionResult> = {}): ConversionResult {
   return {
@@ -74,6 +78,23 @@ BTC USD
       provider: 'currency-beacon',
     }))).toContain(
       '🪙 1 BTC = 80 751 USD  ▲ +2.4%\n(вчера: 78 850 USD)',
+    )
+  })
+
+  it('formats a period change as a standalone message', () => {
+    const periodResult: PeriodChangeResult = {
+      base: 'BTC',
+      quote: 'USD',
+      currentRate: 80_751,
+      historicalRate: 78_000,
+      changePercent: 3.527,
+      provider: 'currency-beacon',
+      days: 7,
+      referenceDate: new Date('2026-09-04T17:12:00.000Z'),
+    }
+
+    expect(formatPeriodChangeResult(periodResult)).toBe(
+      '📈 BTC → USD\n\n💱 1 BTC = 80 751 USD\n(7 дней назад: 78 000 USD)\nИзменение за 7 дней: ▲ +3.5%\n\n🕘 04.09.2026, 17:12 UTC\n📊 CurrencyBeacon',
     )
   })
 

@@ -1,46 +1,37 @@
-import type { Logger } from '../../application/ports/logger.js'
-import type { ConvertCurrency } from '../../application/use-cases/convert-currency.js'
+import type { Logger } from '../../../application/ports/logger.js'
+import type { ConvertCurrency } from '../../../application/use-cases/convert-currency.js'
 import {
   isAllProvidersFailedError,
   isUnsupportedCurrencyError,
-} from '../../domain/errors.js'
-import { toError } from '../../shared/errors.js'
+} from '../../../domain/errors.js'
+import { toError } from '../../../shared/errors.js'
+import { createSendMessageAction } from '../telegram-actions.js'
+import { createPeriodKeyboard } from '../input/telegram-callback-data.js'
+import { formatConversionResult } from '../messages/telegram-result-formatter.js'
 import {
-  formatConversionResult,
   formatFallbackUnavailable,
   formatHelpMessage,
   formatParseError,
   formatServiceUnavailable,
   formatStartMessage,
   formatUnsupportedCurrency,
-} from './telegram-message-formatter.js'
-import { parseTelegramInput } from './telegram-update-parser.js'
-import type { TelegramUpdate, TelegramWebhookAction } from './telegram-types.js'
+} from '../messages/telegram-static-messages.js'
+import { parseTelegramInput } from '../input/telegram-update-parser.js'
+import type { TelegramUpdate, TelegramWebhookAction } from '../telegram-types.js'
 
-export type HandleTelegramUpdate = (
+export type HandleTelegramMessage = (
   update: TelegramUpdate,
 ) => Promise<TelegramWebhookAction | undefined>
 
-interface TelegramUpdateHandlerOptions {
+export interface TelegramMessageHandlerOptions {
   convertCurrency: ConvertCurrency
   logger: Logger
 }
 
-function createSendMessageAction(
-  chatId: number,
-  text: string,
-): TelegramWebhookAction {
-  return {
-    method: 'sendMessage',
-    chat_id: chatId,
-    text,
-  }
-}
-
-export function createTelegramUpdateHandler({
+export function createTelegramMessageHandler({
   convertCurrency,
   logger,
-}: TelegramUpdateHandlerOptions): HandleTelegramUpdate {
+}: TelegramMessageHandlerOptions): HandleTelegramMessage {
   return async (update) => {
     const message = update.message
 
@@ -92,6 +83,7 @@ export function createTelegramUpdateHandler({
       return createSendMessageAction(
         message.chat.id,
         formatConversionResult(result),
+        createPeriodKeyboard(result),
       )
     } catch (error) {
       if (isUnsupportedCurrencyError(error)) {

@@ -5,20 +5,21 @@ title Container diagram for Fullstack Bot
 
 LAYOUT_LEFT_RIGHT()
 
-Person(user, "Пользователь", "Конвертирует валюты и криптовалюты и видит изменение курса к предыдущему дню в личном чате Telegram.")
+Person(user, "Пользователь", "Конвертирует валюты и криптовалюты и выбирает период изменения курса в личном чате Telegram.")
 
 System_Ext(telegram, "Telegram Bot API", "Доставляет обновления боту и выполняет команду из webhook-ответа.")
 System_Ext(currency_beacon, "CurrencyBeacon API", "Предоставляет текущие и исторические курсы фиатных валют и криптовалют.")
 System_Ext(frankfurter, "Frankfurter API", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
 
 System_Boundary(fullstack_bot, "Fullstack Bot") {
-  Container(bot_app, "Bot Application", "Node.js 24, TypeScript 5, Fastify 5", "Принимает Telegram webhook, разбирает сообщение, получает текущий и исторический курсы, рассчитывает сумму и изменение за день и возвращает webhook-ответ.")
+  Container(bot_app, "Bot Application", "Node.js 24, TypeScript 5, Fastify 5", "Принимает сообщения и callback query, получает курсы, рассчитывает конвертацию и изменение за выбранный период и возвращает отдельные сообщения.")
 }
 
 Rel(user, bot_app, "Отправляет запросы на конвертацию и получает ответы", "Telegram")
-Rel(telegram, bot_app, "Вызывает webhook и получает команду sendMessage в HTTP-ответе", "HTTPS/JSON")
-Rel(bot_app, currency_beacon, "Параллельно запрашивает текущий и исторический курсы при наличии API-ключа", "HTTPS/JSON, Bearer token")
-Rel(bot_app, frankfurter, "Запрашивает оба курса без основного провайдера или после сбоя его пары запросов", "HTTPS/JSON")
+Rel(telegram, bot_app, "Передаёт message или callback_query; получает sendMessage в HTTP-ответе", "HTTPS/JSON")
+Rel(bot_app, telegram, "Подтверждает нажатие кнопки", "answerCallbackQuery, HTTPS/JSON")
+Rel(bot_app, currency_beacon, "Запрашивает текущий и исторический курсы или один курс выбранного периода", "HTTPS/JSON, Bearer token")
+Rel(bot_app, frankfurter, "Запрашивает пару курсов для fallback или один курс выбранного периода", "HTTPS/JSON")
 
 SHOW_LEGEND()
 @enduml

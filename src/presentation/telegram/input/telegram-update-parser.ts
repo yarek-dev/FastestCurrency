@@ -1,21 +1,15 @@
-import type { CurrencyConversion } from '../../domain/currency.js'
+import type { ParsedTelegramInput } from './telegram-input.js'
+
+export type {
+  ParsedTelegramInput,
+  ParseErrorReason,
+} from './telegram-input.js'
 
 const TICKER_PATTERN = /(?<![A-Za-z0-9])[A-Za-z0-9]{1,20}(?![A-Za-z0-9])/g
 const NUMBER_PATTERN = /(?<![A-Za-z0-9])[+-]?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?(?![A-Za-z0-9])/g
 const COMPLETE_NUMBER_PATTERN = /^[+-]?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?$/i
 const MAX_AMOUNT = 1_000_000_000_000
 const MAX_DECIMAL_PLACES = 8
-
-export type ParseErrorReason =
-  | 'invalid-amount'
-  | 'missing-currency'
-  | 'multiple-amounts'
-  | 'too-many-currencies'
-
-export type ParsedTelegramInput =
-  | { kind: 'command'; command: 'help' | 'start' }
-  | { kind: 'conversion'; conversion: CurrencyConversion }
-  | { kind: 'error'; reason: ParseErrorReason; currencies?: string[] }
 
 function findCurrencies(text: string): string[] {
   return [...text.matchAll(TICKER_PATTERN)]
