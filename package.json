@@ -8,7 +8,10 @@
     "start": "node --env-file=.env dist/app.js",
     "dev": "tsx --env-file=.env watch src/app.ts",
     "telegram:webhook:set": "tsx --env-file=.env scripts/set-telegram-webhook.ts",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json && tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "packageManager": "pnpm@10.34.5",
   "engines": {
@@ -20,7 +23,9 @@
   },
   "devDependencies": {
     "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "5.0.0",
     "tsx": "4.23.13",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "5.0.0"
   }
 }
