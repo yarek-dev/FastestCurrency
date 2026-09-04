@@ -1,12 +1,13 @@
 import type { ConversionResult, RateObservation } from '../../domain/currency.js'
 import type { ParseErrorReason } from './telegram-update-parser.js'
 
-const HELP_MESSAGE = `Отправь код валюты или валютную пару.
+const HELP_MESSAGE = `Отправь код валюты, криптовалюты или валютную пару.
 
 Примеры:
 EUR
-EUR USD
-100 EUR USD`
+BTC
+100 USDT USD
+0.00000001 BTC USD`
 
 function trimTrailingZeroes(value: string): string {
   return value.replace(/\.?0+$/, '')
@@ -16,12 +17,27 @@ function formatNumber(value: number, maximumFractionDigits: number): string {
   return trimTrailingZeroes(value.toFixed(maximumFractionDigits))
 }
 
+function formatScientific(value: number): string {
+  const [mantissa = '', exponent = '0'] = value.toExponential(7).split('e')
+  return `${trimTrailingZeroes(mantissa)}e${Number(exponent)}`
+}
+
+function formatAdaptive(value: number, regularFractionDigits: number): string {
+  const absoluteValue = Math.abs(value)
+
+  if (absoluteValue > 0 && absoluteValue < 0.00000001) {
+    return formatScientific(value)
+  }
+
+  return formatNumber(value, absoluteValue >= 1 ? regularFractionDigits : 8)
+}
+
 function formatConvertedAmount(value: number): string {
-  return formatNumber(value, Math.abs(value) >= 1 ? 2 : 6)
+  return formatAdaptive(value, 2)
 }
 
 function formatRate(value: number): string {
-  return formatNumber(value, 6)
+  return formatAdaptive(value, 6)
 }
 
 function formatObservation(observation: RateObservation | undefined): string | undefined {
@@ -63,7 +79,7 @@ ${HELP_MESSAGE}`
 export function formatParseError(reason: ParseErrorReason, currencies?: string[]): string {
   switch (reason) {
     case 'invalid-amount':
-      return 'Некорректная сумма. Используй положительное число не больше 1000000000000, до 6 знаков после запятой и без разделителей тысяч.'
+      return 'Некорректная сумма. Используй положительное число не больше 1000000000000, до 8 знаков после запятой и без разделителей тысяч.'
     case 'multiple-amounts':
       return 'Укажи только одну сумму, например: 100 EUR USD.'
     case 'too-many-currencies':
@@ -76,7 +92,7 @@ ${HELP_MESSAGE}`
 }
 
 export function formatConversionResult(result: ConversionResult): string {
-  const amount = formatNumber(result.amount, 6)
+  const amount = formatAdaptive(result.amount, 8)
   const convertedAmount = formatConvertedAmount(result.convertedAmount)
   const rate = formatRate(result.rate)
   const lines: string[] = []

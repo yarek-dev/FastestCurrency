@@ -1,9 +1,10 @@
 import type { CurrencyConversion } from '../../domain/currency.js'
 
-const CURRENCY_PATTERN = /(?<![A-Za-z0-9])[A-Za-z]{3}(?![A-Za-z0-9])/g
-const NUMBER_PATTERN = /[+-]?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?/g
+const TICKER_PATTERN = /(?<![A-Za-z0-9])[A-Za-z0-9]{1,20}(?![A-Za-z0-9])/g
+const NUMBER_PATTERN = /(?<![A-Za-z0-9])[+-]?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?(?![A-Za-z0-9])/g
+const COMPLETE_NUMBER_PATTERN = /^[+-]?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?$/i
 const MAX_AMOUNT = 1_000_000_000_000
-const MAX_DECIMAL_PLACES = 6
+const MAX_DECIMAL_PLACES = 8
 
 export type ParseErrorReason =
   | 'invalid-amount'
@@ -44,8 +45,10 @@ export function parseTelegramInput(text: string): ParsedTelegramInput {
     return command
   }
 
-  const currencies = [...trimmedText.matchAll(CURRENCY_PATTERN)]
-    .map(([currency]) => currency.toUpperCase())
+  const currencies = [...trimmedText.matchAll(TICKER_PATTERN)]
+    .map(([ticker]) => ticker)
+    .filter((ticker) => /[A-Za-z]/.test(ticker) && !COMPLETE_NUMBER_PATTERN.test(ticker))
+    .map((ticker) => ticker.toUpperCase())
 
   if (currencies.length === 0) {
     return { kind: 'error', reason: 'missing-currency' }
