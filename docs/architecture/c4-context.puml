@@ -1,0 +1,22 @@
+@startuml Fullstack Bot - System Context
+!include <C4/C4_Context>
+
+title System Context diagram for Fullstack Bot
+
+LAYOUT_LEFT_RIGHT()
+
+Person(user, "Пользователь", "Конвертирует валюты и криптовалюты и видит изменение курса к предыдущему дню в личном чате Telegram.")
+
+System(fullstack_bot, "Fullstack Bot", "Конвертирует заданную сумму и сравнивает текущий курс с курсом предыдущего UTC-дня.")
+
+System_Ext(telegram, "Telegram", "Предоставляет канал общения пользователя с ботом.")
+System_Ext(currency_beacon, "CurrencyBeacon", "Предоставляет текущие и исторические курсы фиатных валют и криптовалют.")
+System_Ext(frankfurter, "Frankfurter", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
+
+Rel(user, fullstack_bot, "Запрашивает конвертацию и получает сумму, курс и изменение за день через Telegram")
+Rel(fullstack_bot, telegram, "Использует как канал взаимодействия с пользователем")
+Rel(fullstack_bot, currency_beacon, "Получает текущий и исторический курсы валют и криптовалют")
+Rel(fullstack_bot, frankfurter, "Получает текущий и исторический курсы фиатных валют при отсутствии или сбое основного источника")
+
+SHOW_LEGEND()
+@enduml

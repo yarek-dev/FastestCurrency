@@ -1,0 +1,24 @@
+@startuml Fullstack Bot - Containers
+!include <C4/C4_Container>
+
+title Container diagram for Fullstack Bot
+
+LAYOUT_LEFT_RIGHT()
+
+Person(user, "Пользователь", "Конвертирует валюты и криптовалюты и видит изменение курса к предыдущему дню в личном чате Telegram.")
+
+System_Ext(telegram, "Telegram Bot API", "Доставляет обновления боту и выполняет команду из webhook-ответа.")
+System_Ext(currency_beacon, "CurrencyBeacon API", "Предоставляет текущие и исторические курсы фиатных валют и криптовалют.")
+System_Ext(frankfurter, "Frankfurter API", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
+
+System_Boundary(fullstack_bot, "Fullstack Bot") {
+  Container(bot_app, "Bot Application", "Node.js 24, TypeScript 5, Fastify 5", "Принимает Telegram webhook, разбирает сообщение, получает текущий и исторический курсы, рассчитывает сумму и изменение за день и возвращает webhook-ответ.")
+}
+
+Rel(user, bot_app, "Отправляет запросы на конвертацию и получает ответы", "Telegram")
+Rel(telegram, bot_app, "Вызывает webhook и получает команду sendMessage в HTTP-ответе", "HTTPS/JSON")
+Rel(bot_app, currency_beacon, "Параллельно запрашивает текущий и исторический курсы при наличии API-ключа", "HTTPS/JSON, Bearer token")
+Rel(bot_app, frankfurter, "Запрашивает оба курса без основного провайдера или после сбоя его пары запросов", "HTTPS/JSON")
+
+SHOW_LEGEND()
+@enduml

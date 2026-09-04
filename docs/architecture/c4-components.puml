@@ -1,0 +1,27 @@
+@startuml Fullstack Bot - Telegram Bot Service Components
+!include <C4/C4_Component>
+
+title Component diagram for Fullstack Bot — Bot Application
+
+LAYOUT_TOP_DOWN()
+
+System_Ext(telegram, "Telegram Bot API", "Доставляет обновления и принимает webhook-ответ.")
+System_Ext(currency_beacon, "CurrencyBeacon API", "Предоставляет текущие и исторические курсы фиатных валют и криптовалют.")
+System_Ext(frankfurter, "Frankfurter API", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
+
+Container_Boundary(bot_app, "Bot Application") {
+  Component(http_interface, "HTTP Interface", "Fastify 5", "Предоставляет GET /health и защищённый POST /telegram/webhook; проверяет схему Telegram update.")
+  Component(update_processor, "Telegram Update Processor", "TypeScript 5", "Фильтрует обновления, разбирает служебные команды и текстовые запросы на конвертацию, форматирует Telegram-ответы.")
+  Component(conversion_service, "Currency Conversion Service", "TypeScript 5", "Определяет предыдущую UTC-дату и рассчитывает сумму и процент изменения по паре курсов без округления.")
+  Component(exchange_rate_integration, "Exchange Rate Integration", "TypeScript 5, Fetch API", "Получает текущий и исторический курсы одним портом GetExchangeRatePair, отменяет связанный запрос при ошибке и целиком переключает пару на резервный источник.")
+}
+
+Rel(telegram, http_interface, "Передаёт update; получает sendMessage в ответе", "HTTPS/JSON")
+Rel(http_interface, update_processor, "Передаёт проверенный Telegram update", "HandleTelegramUpdate")
+Rel(update_processor, conversion_service, "Запрашивает конвертацию распознанной суммы и пары", "ConvertCurrency")
+Rel(conversion_service, exchange_rate_integration, "Запрашивает текущий и исторический курсы", "GetExchangeRatePair")
+Rel(exchange_rate_integration, currency_beacon, "Параллельно запрашивает latest и historical; при ошибке отменяет связанный запрос", "HTTPS/JSON, Bearer token, timeout 3 s")
+Rel(exchange_rate_integration, frankfurter, "Запрашивает оба курса напрямую или после сбоя пары запросов основного источника", "HTTPS/JSON, timeout 3 s")
+
+SHOW_LEGEND()
+@enduml
