@@ -29,7 +29,7 @@ export function formatConversionResult(result: ConversionResult): string {
   if (result.amount !== 1) {
     lines.push(`💱 1 ${result.base} = ${rate} ${result.quote}  ${indicator}`)
   }
-  lines.push(`(вчера: ${formatRate(result.previousRate)} ${result.quote})`)
+  lines.push(`📈 (вчера: ${formatRate(result.previousRate)} ${result.quote})`)
 
   const observation = formatObservation(result.observedAt)
   lines.push('')
@@ -37,7 +37,7 @@ export function formatConversionResult(result: ConversionResult): string {
     lines.push(observation)
   }
 
-  lines.push(formatProvider(result.provider))
+  lines.push(`${formatProvider(result.provider)}\n\n📊 Изменение курса за:`)
 
   return lines.join('\n')
 }
@@ -49,10 +49,10 @@ export function formatPeriodChangeResult(result: PeriodChangeResult): string {
     value: result.referenceDate.toISOString(),
   })
   const lines = [
-    `📈 ${result.base} → ${result.quote}`,
+    `🔄 ${result.base} → ${result.quote}`,
     '',
-    `💱 1 ${result.base} = ${formatRate(result.currentRate)} ${result.quote}`,
-    `(${result.days} ${dayLabel} назад: ${formatRate(result.historicalRate)} ${result.quote})`,
+    `🪙 1 ${result.base} = ${formatRate(result.currentRate)} ${result.quote}`,
+    `📈 (${result.days} ${dayLabel} назад: ${formatRate(result.historicalRate)} ${result.quote})`,
     `Изменение за ${result.days} ${dayLabel}: ${formatChange(result.changePercent)}`,
     '',
   ]

@@ -1,20 +1,20 @@
 import type { ParseErrorReason } from '../input/telegram-input.js'
 
-const HELP_MESSAGE = `Отправь код валюты, криптовалюты или валютную пару.
+const HELP_MESSAGE = `Привет! 👋 Я помогу узнать курс валют и криптовалют, пересчитать сумму и посмотреть, как изменился курс.
 
-Примеры:
-EUR
-BTC USD
-100 USDT USD`
+Отправь запрос, например:
+💵 EUR — курс евро к доллару
+🪙 BTC EUR — курс биткоина к евро
+💱 100 USDT USD — сколько будет 100 USDT в долларах
+
+В ответе покажу курс и сравнение со вчерашним значением. Кнопки под ответом покажут изменение за 3, 7, 14 или 30 дней.`
 
 export function formatHelpMessage(): string {
   return HELP_MESSAGE
 }
 
 export function formatStartMessage(): string {
-  return `Привет! Я конвертирую валюты.
-
-${HELP_MESSAGE}`
+  return HELP_MESSAGE
 }
 
 export function formatParseError(reason: ParseErrorReason, currencies?: string[]): string {

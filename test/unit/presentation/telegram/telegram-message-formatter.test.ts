@@ -31,15 +31,17 @@ function result(overrides: Partial<ConversionResult> = {}): ConversionResult {
 
 describe('telegram message formatter', () => {
   it('returns stable help and start messages', () => {
-    const help = `Отправь код валюты, криптовалюты или валютную пару.
+    const help = `Привет! 👋 Я помогу узнать курс валют и криптовалют, пересчитать сумму и посмотреть, как изменился курс.
 
-Примеры:
-EUR
-BTC USD
-100 USDT USD`
+Отправь запрос, например:
+💵 EUR — курс евро к доллару
+🪙 BTC EUR — курс биткоина к евро
+💱 100 USDT USD — сколько будет 100 USDT в долларах
+
+В ответе покажу курс и сравнение со вчерашним значением. Кнопки под ответом покажут изменение за 3, 7, 14 или 30 дней.`
 
     expect(formatHelpMessage()).toBe(help)
-    expect(formatStartMessage()).toBe(`Привет! Я конвертирую валюты.\n\n${help}`)
+    expect(formatStartMessage()).toBe(help)
   })
 
   it.each([
@@ -53,7 +55,7 @@ BTC USD
 
   it('formats a one-unit Frankfurter result without a redundant rate line', () => {
     expect(formatConversionResult(result())).toBe(
-      '🔄 EUR → USD\n\n🪙 1 EUR = 1.1 USD  ▲ +10%\n(вчера: 1 USD)\n\n📊 Frankfurter, дневной справочный курс',
+      '🔄 EUR → USD\n\n🪙 1 EUR = 1.1 USD  ▲ +10%\n📈 (вчера: 1 USD)\n\n📊 Frankfurter, дневной справочный курс\n\n📊 Изменение курса за:',
     )
   })
 
@@ -64,7 +66,7 @@ BTC USD
       convertedAmount: 3.0864195,
       provider: 'currency-beacon',
     }))).toBe(
-      '🔄 EUR → USD\n\n🪙 2.5 EUR = 3.09 USD\n💱 1 EUR = 1.234568 USD  ▲ +10%\n(вчера: 1 USD)\n\n📊 CurrencyBeacon',
+      '🔄 EUR → USD\n\n🪙 2.5 EUR = 3.09 USD\n💱 1 EUR = 1.234568 USD  ▲ +10%\n📈 (вчера: 1 USD)\n\n📊 CurrencyBeacon\n\n📊 Изменение курса за:',
     )
   })
 
@@ -77,7 +79,7 @@ BTC USD
       changePercent: 2.4109,
       provider: 'currency-beacon',
     }))).toContain(
-      '🪙 1 BTC = 80 751 USD  ▲ +2.4%\n(вчера: 78 850 USD)',
+      '🪙 1 BTC = 80 751 USD  ▲ +2.4%\n📈 (вчера: 78 850 USD)',
     )
   })
 
@@ -94,7 +96,7 @@ BTC USD
     }
 
     expect(formatPeriodChangeResult(periodResult)).toBe(
-      '📈 BTC → USD\n\n💱 1 BTC = 80 751 USD\n(7 дней назад: 78 000 USD)\nИзменение за 7 дней: ▲ +3.5%\n\n🕘 04.09.2026, 17:12 UTC\n📊 CurrencyBeacon',
+      '🔄 BTC → USD\n\n🪙 1 BTC = 80 751 USD\n📈 (7 дней назад: 78 000 USD)\nИзменение за 7 дней: ▲ +3.5%\n\n🕘 04.09.2026, 17:12 UTC\n📊 CurrencyBeacon',
     )
   })
 
@@ -164,7 +166,7 @@ BTC USD
 
     expect(message).not.toContain('🕘')
     expect(message).toBe(
-      '🔄 EUR → USD\n\n🪙 1 EUR = 1.1 USD  ▲ +10%\n(вчера: 1 USD)\n\n📊 Frankfurter, дневной справочный курс',
+      '🔄 EUR → USD\n\n🪙 1 EUR = 1.1 USD  ▲ +10%\n📈 (вчера: 1 USD)\n\n📊 Frankfurter, дневной справочный курс\n\n📊 Изменение курса за:',
     )
   })
 
