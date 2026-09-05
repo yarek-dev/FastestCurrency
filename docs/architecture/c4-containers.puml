@@ -15,11 +15,11 @@ System_Boundary(fullstack_bot, "Fullstack Bot") {
   Container(bot_app, "Bot Application", "Node.js 24, TypeScript 5, Fastify 5", "Принимает сообщения и callback query, получает курсы, рассчитывает конвертацию и изменение за выбранный период и возвращает отдельные сообщения.")
 }
 
-Rel(user, bot_app, "Отправляет запросы на конвертацию и получает ответы", "Telegram")
+Rel(user, bot_app, "Запрашивает конвертацию, выбирает период и получает ответы", "Личный чат Telegram")
 Rel(telegram, bot_app, "Передаёт message или callback_query; получает sendMessage в HTTP-ответе", "HTTPS/JSON")
 Rel(bot_app, telegram, "Подтверждает нажатие кнопки", "answerCallbackQuery, HTTPS/JSON")
 Rel(bot_app, currency_beacon, "Запрашивает текущий и исторический курсы или один курс выбранного периода", "HTTPS/JSON, Bearer token")
-Rel(bot_app, frankfurter, "Запрашивает пару курсов для fallback или один курс выбранного периода", "HTTPS/JSON")
+Rel(bot_app, frankfurter, "Получает пару курсов при fallback или без CurrencyBeacon; один исторический курс, если выбран Frankfurter", "HTTPS/JSON")
 
 SHOW_LEGEND()
 @enduml

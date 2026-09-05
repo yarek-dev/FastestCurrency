@@ -1,4 +1,4 @@
-@startuml Fullstack Bot - Telegram Bot Service Components
+@startuml Fullstack Bot - Bot Application Components
 !include <C4/C4_Component>
 
 title Component diagram for Fullstack Bot — Bot Application
@@ -11,18 +11,32 @@ System_Ext(frankfurter, "Frankfurter API", "Предоставляет теку�
 
 Container_Boundary(bot_app, "Bot Application") {
   Component(http_interface, "HTTP Interface", "Fastify 5", "Предоставляет GET /health и защищённый POST /telegram/webhook; проверяет схему Telegram update.")
-  Component(update_processor, "Telegram Update Processor", "TypeScript 5", "Разбирает сообщения и callback data, формирует ответы и inline-кнопки, подтверждает нажатия.")
-  Component(conversion_service, "Currency Conversion Service", "TypeScript 5", "Рассчитывает сумму и изменение за предыдущий день или выбранный период без хранения состояния.")
-  Component(exchange_rate_integration, "Exchange Rate Integration", "TypeScript 5, Fetch API", "Получает пару текущего и исторического курсов с атомарным fallback либо один historical-курс выбранного провайдера.")
+  Component(update_router, "Telegram Update Router", "TypeScript", "Выбирает обработчик сообщения или callback query.")
+  Component(message_handler, "Message Handler", "TypeScript", "Обрабатывает команды и запросы конвертации; разбирает текст, формирует ответ и кнопки периода.")
+  Component(callback_handler, "Callback Query Handler", "TypeScript", "Читает курс и провайдера из callback data, дату из исходного сообщения; формирует отдельный ответ.")
+  Component(convert_currency, "Convert Currency", "TypeScript", "Рассчитывает сумму и процент изменения относительно вчерашнего курса.")
+  Component(period_change, "Get Period Change", "TypeScript", "Сравнивает исходный курс с курсом за 3, 7, 14 или 30 дней до даты сообщения; использует того же провайдера без fallback.")
+  Component(rate_pair, "Exchange Rate Pair / Fallback", "TypeScript", "Получает оба курса у одного источника; при допустимом сбое основного источника заменяет всю пару резервной.")
+  Component(beacon_adapter, "CurrencyBeacon Adapter", "TypeScript, Fetch API", "Получает и нормализует текущий или исторический курс; доступен при настроенном API key.")
+  Component(frankfurter_adapter, "Frankfurter Adapter", "TypeScript, Fetch API", "Получает и нормализует текущий или исторический справочный курс.")
+  Component(telegram_client, "Telegram Callback Client", "TypeScript, Fetch API", "Подтверждает получение callback query через Telegram Bot API.")
 }
 
 Rel(telegram, http_interface, "Передаёт message или callback_query; получает sendMessage в ответе", "HTTPS/JSON")
-Rel(http_interface, update_processor, "Передаёт проверенный Telegram update", "HandleTelegramUpdate")
-Rel(update_processor, telegram, "Подтверждает нажатие inline-кнопки", "answerCallbackQuery, HTTPS/JSON, timeout 3 s")
-Rel(update_processor, conversion_service, "Запрашивает конвертацию или изменение за период", "ConvertCurrency / GetPeriodChange")
-Rel(conversion_service, exchange_rate_integration, "Запрашивает пару курсов или один historical-курс", "GetExchangeRatePair / GetExchangeRate")
-Rel(exchange_rate_integration, currency_beacon, "Параллельно запрашивает latest и historical; при ошибке отменяет связанный запрос", "HTTPS/JSON, Bearer token, timeout 3 s")
-Rel(exchange_rate_integration, frankfurter, "Запрашивает оба курса напрямую или после сбоя пары запросов основного источника", "HTTPS/JSON, timeout 3 s")
+Rel(http_interface, update_router, "Передаёт проверенный update; получает webhook action", "HandleTelegramUpdate")
+Rel(update_router, message_handler, "Передаёт message", "HandleTelegramMessage")
+Rel(update_router, callback_handler, "Передаёт callback_query", "HandleTelegramCallbackQuery")
+Rel(message_handler, convert_currency, "Передаёт сумму и валютную пару", "ConvertCurrency")
+Rel(callback_handler, period_change, "Передаёт исходный курс, провайдера, период и дату", "GetPeriodChange")
+Rel(callback_handler, telegram_client, "Запрашивает подтверждение нажатия", "AnswerCallbackQuery")
+Rel(telegram_client, telegram, "Подтверждает callback", "answerCallbackQuery, HTTPS/JSON")
+Rel(convert_currency, rate_pair, "Запрашивает текущий и вчерашний курсы", "GetExchangeRatePair")
+Rel(rate_pair, beacon_adapter, "Получает пару у основного источника, если настроен", "GetExchangeRate")
+Rel(rate_pair, frankfurter_adapter, "Получает пару при fallback или без основного источника", "GetExchangeRate")
+Rel(period_change, beacon_adapter, "Запрашивает один исторический курс, если выбран CurrencyBeacon", "GetExchangeRate")
+Rel(period_change, frankfurter_adapter, "Запрашивает один исторический курс, если выбран Frankfurter", "GetExchangeRate")
+Rel(beacon_adapter, currency_beacon, "Получает текущий или исторический курс", "HTTPS/JSON, Bearer token")
+Rel(frankfurter_adapter, frankfurter, "Получает текущий или исторический курс", "HTTPS/JSON")
 
 SHOW_LEGEND()
 @enduml
