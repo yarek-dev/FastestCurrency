@@ -1,9 +1,16 @@
-import { requireEnvironmentVariable } from '../src/config/environment-variable.js'
-import { toError } from '../src/shared/errors.js'
-
 interface TelegramApiResponse {
   ok: boolean
   description?: string
+}
+
+function requireEnvironmentVariable(name: string): string {
+  const value = Deno.env.get(name)
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+
+  return value
 }
 
 function getWebhookUrl(): string {
@@ -68,7 +75,7 @@ async function setTelegramWebhook(): Promise<void> {
 try {
   await setTelegramWebhook()
 } catch (error) {
-  const message = toError(error, 'Unknown error').message
+  const message = error instanceof Error ? error.message : 'Unknown error'
   console.error(`Failed to configure Telegram webhook: ${message}`)
-  process.exitCode = 1
+  Deno.exit(1)
 }

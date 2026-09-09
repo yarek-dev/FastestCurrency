@@ -4,28 +4,17 @@
   "description": "",
   "private": true,
   "scripts": {
-    "build": "tsc",
-    "start": "node --env-file=.env dist/app.js",
-    "dev": "tsx --env-file=.env watch src/app.ts",
-    "telegram:webhook:set": "tsx --env-file=.env scripts/set-telegram-webhook.ts",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json && tsc -p tsconfig.test.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "telegram:webhook:set": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/set-telegram-webhook.ts",
+    "typecheck": "deno check --config supabase/functions/telegram-webhook/deno.json supabase/functions/telegram-webhook/index.ts scripts/set-telegram-webhook.ts",
+    "test": "deno test --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
+    "test:watch": "deno test --watch --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
+    "deploy": "supabase functions deploy telegram-webhook"
   },
   "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": "24.x"
   },
-  "type": "module",
-  "dependencies": {
-    "fastify": "5.12.1"
-  },
   "devDependencies": {
-    "@types/node": "24.13.3",
-    "@vitest/coverage-v8": "5.0.0",
-    "tsx": "4.23.13",
-    "typescript": "5.9.3",
-    "vitest": "5.0.0"
+    "supabase": "2.117.0"
   }
 }
