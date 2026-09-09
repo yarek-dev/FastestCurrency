@@ -12,14 +12,14 @@ System_Ext(currency_beacon, "CurrencyBeacon API", "Предоставляет т
 System_Ext(frankfurter, "Frankfurter API", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
 
 System_Boundary(fullstack_bot, "Fullstack Bot") {
-  Container(bot_app, "Bot Application", "Node.js 24, TypeScript 5, Fastify 5", "Принимает сообщения и callback query, получает курсы, рассчитывает конвертацию и изменение за выбранный период и возвращает отдельные сообщения.")
+  Container(edge_function, "telegram-webhook", "Supabase Edge Functions, Deno 2, TypeScript", "Принимает сообщения и callback query, получает курсы и возвращает пользователю результаты.")
 }
 
-Rel(user, bot_app, "Запрашивает конвертацию, выбирает период и получает ответы", "Личный чат Telegram")
-Rel(telegram, bot_app, "Передаёт message или callback_query; получает sendMessage в HTTP-ответе", "HTTPS/JSON")
-Rel(bot_app, telegram, "Подтверждает нажатие кнопки", "answerCallbackQuery, HTTPS/JSON")
-Rel(bot_app, currency_beacon, "Запрашивает текущий и исторический курсы или один курс выбранного периода", "HTTPS/JSON, Bearer token")
-Rel(bot_app, frankfurter, "Получает пару курсов при fallback или без CurrencyBeacon; один исторический курс, если выбран Frankfurter", "HTTPS/JSON")
+Rel(user, edge_function, "Запрашивает конвертацию, выбирает период и получает ответы", "Личный чат Telegram")
+Rel(telegram, edge_function, "Передаёт message или callback_query; получает sendMessage в HTTP-ответе", "HTTPS/JSON")
+Rel(edge_function, telegram, "Подтверждает нажатие кнопки", "answerCallbackQuery, HTTPS/JSON")
+Rel(edge_function, currency_beacon, "Запрашивает текущие и исторические курсы", "HTTPS/JSON, Bearer token")
+Rel(edge_function, frankfurter, "Запрашивает справочные курсы фиатных валют", "HTTPS/JSON")
 
 SHOW_LEGEND()
 @enduml

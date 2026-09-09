@@ -2,9 +2,5 @@
 .env
 node_modules
 .pnpm-store
-dist
 qa-log/
-coverage/
-
-.vercel
 .env.local
