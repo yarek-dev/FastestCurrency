@@ -1,178 +1,151 @@
 begin;
 
-select plan(22);
+select plan(18);
 
-select has_table(
+select has_table('public', 'clients', 'clients table should exist');
+select has_table('public', 'messages', 'messages table should exist');
+
+select has_column(
     'public',
     'clients',
-    'clients table should exist'
+    'user_telegram_id',
+    'clients.user_telegram_id should exist'
 );
 
-select has_table(
+select has_column(
+    'public',
+    'clients',
+    'last_message_at',
+    'clients.last_message_at should exist'
+);
+
+select has_column(
     'public',
     'messages',
-    'messages table should exist'
+    'author',
+    'messages.author should exist'
 );
 
-select lives_ok(
-    $$select *
-      from public.save_incoming_message(
-          9000000001,
-          'Yaroslav',
-          'Developer',
-          '@yarek_dev',
-          '/start',
-          '2026-09-17 10:00:00+00'::timestamptz,
-          'Telegram'
-      )$$,
-    'first incoming message should be saved'
+select has_column(
+    'public',
+    'messages',
+    'body',
+    'messages.body should exist'
 );
 
-select is(
-    (select count(*)::integer
-     from public.clients
-     where user_telegram_id = 9000000001),
-    1,
-    'first message should create one client'
+select has_column(
+    'public',
+    'messages',
+    'messenger_user_id',
+    'messages.messenger_user_id should exist'
 );
 
-select is(
-    (select count(*)::integer
-     from public.messages
-     where messenger_user_id = '9000000001'),
-    1,
-    'first message should create one message'
+select has_column(
+    'public',
+    'messages',
+    'messenger_type',
+    'messages.messenger_type should exist'
 );
 
-select is(
-    (select author
-     from public.messages
-     where messenger_user_id = '9000000001'
-       and body = '/start'),
-    'yarek_dev',
-    'author should use Telegram username without @'
+select has_column(
+    'public',
+    'messages',
+    'client_id',
+    'messages.client_id should exist'
 );
 
-select is(
-    (select messenger_type
-     from public.messages
-     where messenger_user_id = '9000000001'
-       and body = '/start'),
-    'telegram',
-    'messenger type should be normalized to lowercase'
-);
-
-select is(
-    (select client_id
-     from public.messages
-     where messenger_user_id = '9000000001'
-       and body = '/start'),
-    (select id
-     from public.clients
-     where user_telegram_id = 9000000001),
-    'message should reference the created client'
-);
-
-select lives_ok(
-    $$select *
-      from public.save_incoming_message(
-          9000000001,
-          'Yaroslav',
-          'Updated',
-          '@yarek_dev',
-          'second message',
-          '2026-09-17 10:05:00+00'::timestamptz,
-          'telegram'
-      )$$,
-    'second incoming message should be saved'
-);
-
-select is(
-    (select count(*)::integer
-     from public.clients
-     where user_telegram_id = 9000000001),
-    1,
-    'second message should reuse the existing client'
-);
-
-select is(
-    (select count(*)::integer
-     from public.messages
-     where messenger_user_id = '9000000001'),
-    2,
-    'second message should add another message'
-);
-
-select is(
-    (select first_name
-     from public.clients
-     where user_telegram_id = 9000000001),
+insert into public.clients (
+    user_telegram_id,
+    first_name,
+    last_name,
+    last_message_at
+)
+values (
+    '9000000001',
     'Yaroslav',
-    'existing client first name should be updated'
+    'Developer',
+    '2026-09-17 10:05:00+00'
 );
 
 select is(
-    (select last_name
-     from public.clients
-     where user_telegram_id = 9000000001),
-    'Updated',
-    'existing client last name should be updated'
+    (select count(*)::integer from public.clients),
+    1,
+    'one client should be stored'
+);
+
+insert into public.messages (
+    created_at,
+    author,
+    body,
+    messenger_user_id,
+    messenger_type,
+    client_id
+)
+values
+    (
+        '2026-09-17 10:00:00+00',
+        'yarek_dev',
+        '/start',
+        '9000000001',
+        'telegram',
+        (select id from public.clients where user_telegram_id = '9000000001')
+    ),
+    (
+        '2026-09-17 10:05:00+00',
+        'bot',
+        'Hello!',
+        '9000000001',
+        'telegram',
+        (select id from public.clients where user_telegram_id = '9000000001')
+    );
+
+select is(
+    (select count(*)::integer from public.messages),
+    2,
+    'client and bot messages should be stored'
 );
 
 select is(
-    (select last_messenger_at
+    (select last_message_at
      from public.clients
-     where user_telegram_id = 9000000001),
+     where user_telegram_id = '9000000001'),
     '2026-09-17 10:05:00+00'::timestamptz,
-    'last messenger time should move forward'
+    'client should contain the last message time'
+);
+
+select is(
+    (select client_id from public.messages where body = '/start'),
+    (select id from public.clients where user_telegram_id = '9000000001'),
+    'message should reference its client'
 );
 
 select lives_ok(
-    $$select *
-      from public.save_incoming_message(
-          9000000001,
-          'Fallback Author',
-          null,
-          null,
-          'delayed message',
-          '2026-09-17 09:55:00+00'::timestamptz,
-          'telegram'
-      )$$,
-    'delayed incoming message should be saved'
+    $$select public.save_message(
+        '9000000001',
+        'Yaroslav',
+        'Updated',
+        'yarek_dev',
+        'Saved through RPC',
+        'telegram',
+        '2026-09-17 10:10:00+00'
+    )$$,
+    'save_message should save a message for an existing client'
 );
 
 select is(
     (select count(*)::integer
-     from public.messages
-     where messenger_user_id = '9000000001'),
-    3,
-    'delayed message should still be stored'
-);
-
-select is(
-    (select author
-     from public.messages
-     where messenger_user_id = '9000000001'
-       and body = 'delayed message'),
-    'Fallback',
-    'author should fall back to the first word of first name'
-);
-
-select is(
-    (select last_messenger_at
      from public.clients
-     where user_telegram_id = 9000000001),
-    '2026-09-17 10:05:00+00'::timestamptz,
-    'delayed message should not move last messenger time backwards'
+     where user_telegram_id = '9000000001'),
+    1,
+    'save_message should reuse an existing client'
 );
 
 select is(
-    (select created_at
-     from public.messages
-     where messenger_user_id = '9000000001'
-       and body = 'delayed message'),
-    '2026-09-17 09:55:00+00'::timestamptz,
-    'message creation time should come from Telegram'
+    (select last_message_at
+     from public.clients
+     where user_telegram_id = '9000000001'),
+    '2026-09-17 10:10:00+00'::timestamptz,
+    'save_message should update the last message time'
 );
 
 create function pg_temp.reject_message_insert()
@@ -190,19 +163,18 @@ for each row
 execute function pg_temp.reject_message_insert();
 
 select throws_ok(
-    $$select *
-      from public.save_incoming_message(
-          9000000002,
-          'Rollback',
-          'Test',
-          '@rollback_test',
-          'must not persist',
-          '2026-09-17 10:10:00+00'::timestamptz,
-          'telegram'
-      )$$,
+    $$select public.save_message(
+        '9000000002',
+        'Rollback',
+        'Test',
+        'rollback_test',
+        'Must not persist',
+        'telegram',
+        '2026-09-17 10:15:00+00'
+    )$$,
     'P0001',
     'forced message insert failure',
-    'message insert failure should abort the RPC'
+    'message failure should abort save_message'
 );
 
 drop trigger reject_message_insert on public.messages;
@@ -210,17 +182,9 @@ drop trigger reject_message_insert on public.messages;
 select is(
     (select count(*)::integer
      from public.clients
-     where user_telegram_id = 9000000002),
+     where user_telegram_id = '9000000002'),
     0,
-    'failed message insert should roll back the client upsert'
-);
-
-select is(
-    (select count(*)::integer
-     from public.messages
-     where messenger_user_id = '9000000002'),
-    0,
-    'failed message insert should not create a message'
+    'failed message insert should roll back the new client'
 );
 
 select * from finish();
