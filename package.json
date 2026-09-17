@@ -8,6 +8,7 @@
     "typecheck": "deno check --config supabase/functions/telegram-webhook/deno.json supabase/functions/telegram-webhook/index.ts scripts/set-telegram-webhook.ts",
     "test": "deno test --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
     "test:watch": "deno test --watch --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
+    "test:db": "supabase test db",
     "deploy": "supabase functions deploy"
   },
   "packageManager": "pnpm@10.34.5",
