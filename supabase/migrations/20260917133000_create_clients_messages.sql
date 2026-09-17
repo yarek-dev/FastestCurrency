@@ -40,6 +40,9 @@ alter table public.messages enable row level security;
 revoke all on table public.clients from anon, authenticated;
 revoke all on table public.messages from anon, authenticated;
 
+grant select, insert, update, delete on table public.clients to service_role;
+grant select, insert, update, delete on table public.messages to service_role;
+
 create or replace function public.save_incoming_message(
     p_user_telegram_id bigint,
     p_first_name text,
@@ -87,7 +90,7 @@ begin
         split_part(btrim(p_first_name), ' ', 1)
     );
 
-    insert into public.clients (
+    insert into public.clients as existing_client (
         user_telegram_id,
         first_name,
         last_name,
@@ -104,7 +107,7 @@ begin
         first_name = excluded.first_name,
         last_name = excluded.last_name,
         last_messenger_at = greatest(
-            public.clients.last_messenger_at,
+            existing_client.last_messenger_at,
             excluded.last_messenger_at
         )
     returning id into v_client_id;
