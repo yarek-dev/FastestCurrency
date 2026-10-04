@@ -1,21 +1,21 @@
 {
   "name": "fullstack-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Fullstack Bot: React frontend and Supabase backend",
   "private": true,
   "scripts": {
-    "telegram:webhook:set": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/set-telegram-webhook.ts",
-    "typecheck": "deno check --config supabase/functions/telegram-webhook/deno.json supabase/functions/telegram-webhook/index.ts supabase/functions/clients/index.ts supabase/functions/messages/index.ts scripts/set-telegram-webhook.ts",
-    "test": "deno test --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
-    "test:watch": "deno test --watch --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
-    "test:db": "supabase test db",
-    "deploy": "supabase functions deploy"
+    "dev": "pnpm --filter @fullstack-bot/frontend dev",
+    "build": "pnpm --filter @fullstack-bot/frontend build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm --filter @fullstack-bot/backend test",
+    "test:watch": "pnpm --filter @fullstack-bot/backend test:watch",
+    "test:db": "pnpm --filter @fullstack-bot/backend test:db",
+    "deploy": "pnpm --filter @fullstack-bot/backend deploy",
+    "supabase": "pnpm --filter @fullstack-bot/backend exec supabase",
+    "telegram:webhook:set": "pnpm --filter @fullstack-bot/backend telegram:webhook:set"
   },
   "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": "24.x"
-  },
-  "devDependencies": {
-    "supabase": "2.117.0"
   }
 }

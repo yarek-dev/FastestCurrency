@@ -14,11 +14,11 @@
 
 В рабочем режиме система состоит из одной Supabase Edge Function `telegram-webhook`. Она выполняется в Deno runtime, принимает HTTPS webhook от Telegram и обращается к внешним API. Собственной базы данных, очереди и кэша у приложения нет.
 
-Одноразовый скрипт `scripts/set-telegram-webhook.ts` регистрирует URL функции в Telegram, но не является постоянно работающим компонентом.
+Одноразовый скрипт `backend/scripts/set-telegram-webhook.ts` регистрирует URL функции в Telegram, но не является постоянно работающим компонентом.
 
 ## Чистая архитектура
 
-Код функции находится в `supabase/functions/telegram-webhook` и разделён на слои:
+Код функции находится в `backend/supabase/functions/telegram-webhook` и разделён на слои:
 
 - `domain` содержит бизнес-типы и ошибки и не зависит от других слоёв;
 - `application` содержит сценарии `Convert Currency`, `Get Period Change` и порт провайдера курсов;
@@ -32,7 +32,7 @@
 
 | Компонент | Реализация |
 | --- | --- |
-| HTTP Interface / Composition Root | `supabase/functions/telegram-webhook/index.ts` |
+| HTTP Interface / Composition Root | `backend/supabase/functions/telegram-webhook/index.ts` |
 | Telegram Update Router | `presentation/telegram/handlers/telegram-update-handler.ts` |
 | Message Handler | `presentation/telegram/handlers/telegram-message-handler.ts` |
 | Callback Query Handler | `presentation/telegram/handlers/telegram-callback-query-handler.ts` |

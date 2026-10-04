@@ -1,0 +1,17 @@
+{
+  "name": "@fullstack-bot/backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Supabase Edge Functions, database migrations and Telegram bot",
+  "scripts": {
+    "telegram:webhook:set": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/set-telegram-webhook.ts",
+    "typecheck": "deno check --config supabase/functions/telegram-webhook/deno.json supabase/functions/telegram-webhook/index.ts supabase/functions/clients/index.ts supabase/functions/messages/index.ts scripts/set-telegram-webhook.ts",
+    "test": "deno test --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
+    "test:watch": "deno test --watch --config supabase/functions/telegram-webhook/deno.json supabase/tests/unit",
+    "test:db": "supabase test db",
+    "deploy": "supabase functions deploy"
+  },
+  "devDependencies": {
+    "supabase": "2.117.0"
+  }
+}
