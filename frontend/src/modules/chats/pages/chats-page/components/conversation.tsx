@@ -1,54 +1,81 @@
-import { useEffect, useRef } from "react";
-import type { Chat } from "./types";
-import styles from "./chats.module.css";
+import { Fragment, useEffect, useRef } from "react";
+import { Avatar, AvatarFallback } from "../../../../../components/ui/avatar";
+import { Badge } from "../../../../../components/ui/badge";
+import { Button } from "../../../../../components/ui/button";
+import type { Chat } from "../../../types/chats";
+import styles from "./conversation.module.css";
+
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+});
+
+function messageDate(createdAt: string) {
+    return dateFormatter.format(new Date(createdAt));
+}
 
 export function Conversation(
-    { chat, onBack }: { chat: Chat; onBack: () => void },
+    { chat, onBack, className = "" }: { chat: Chat; onBack: () => void; className?: string },
 ) {
     const historyRef = useRef<HTMLDivElement>(null);
+    const followLatestRef = useRef(true);
+    const previousChatIdRef = useRef(chat.id);
 
     useEffect(() => {
         const history = historyRef.current;
-        if (history) history.scrollTop = history.scrollHeight;
-    }, [chat.id]);
+        if (previousChatIdRef.current !== chat.id) {
+            followLatestRef.current = true;
+            previousChatIdRef.current = chat.id;
+        }
+        if (history && followLatestRef.current) history.scrollTop = history.scrollHeight;
+    }, [chat.id, chat.messages]);
 
     return (
         <section
-            className={styles.conversation}
+            className={`${styles.conversation} ${className}`}
             aria-label={`Переписка с клиентом ${chat.name}`}
         >
             <header className={styles.conversationHeader}>
-                <button
+                <Button
+                    variant="ghost"
+                    size="icon"
                     className={styles.backButton}
                     onClick={onBack}
                     aria-label="Вернуться к списку клиентов"
                 >
                     ←
-                </button>
-                <span
+                </Button>
+                <Avatar
                     className={styles.avatar}
                     style={{ backgroundColor: chat.color }}
                     aria-hidden="true"
                 >
-                    {chat.initials}
-                </span>
+                    <AvatarFallback>{chat.initials}</AvatarFallback>
+                </Avatar>
                 <div className={styles.contact}>
                     <h2>{chat.name}</h2>
-                    <p>{chat.handle}</p>
+                    <p>Telegram ID: {chat.telegramId}</p>
                 </div>
-                <span className={styles.channel}>Telegram</span>
+                <Badge variant="outline" className={styles.channel}>Telegram</Badge>
             </header>
-            <div className={styles.history} ref={historyRef}>
+            <div className={styles.history} ref={historyRef} onScroll={() => {
+                const history = historyRef.current;
+                if (history) followLatestRef.current = history.scrollHeight - history.scrollTop - history.clientHeight < 80;
+            }}>
                 <div className={styles.historyIntro}>
                     <span className={styles.introLine} />
-                    <span>Начало переписки</span>
+                    <span>История сообщений</span>
                     <span className={styles.introLine} />
                 </div>
-                <div className={styles.date}>4 октября 2026</div>
+                {chat.messages.length === 0 && <p className={styles.noResults}>У этого клиента пока нет загруженных сообщений.</p>}
                 <ol className={styles.messages}>
-                    {chat.messages.map((message) => (
+                    {chat.messages.map((message, index) => (
+                      <Fragment key={message.id}>
+                        {(index === 0 || messageDate(chat.messages[index - 1].createdAt) !== messageDate(message.createdAt)) && (
+                            <li className={styles.dateSeparator}><time className={styles.date} dateTime={message.createdAt}>{messageDate(message.createdAt)}</time></li>
+                        )}
                         <li
-                            key={message.id}
                             className={`${styles.messageRow} ${
                                 message.author === "bot" ? styles.outgoing : ""
                             }`}
@@ -61,13 +88,11 @@ export function Conversation(
                                 )}
                                 <p>{message.text}</p>
                                 <div className={styles.messageMeta}>
-                                    <time>{message.time}</time>
-                                    {message.author === "bot" && (
-                                        <span aria-label="Отправлено">✓✓</span>
-                                    )}
+                                    <time dateTime={message.createdAt}>{message.time}</time>
                                 </div>
                             </div>
                         </li>
+                      </Fragment>
                     ))}
                 </ol>
             </div>

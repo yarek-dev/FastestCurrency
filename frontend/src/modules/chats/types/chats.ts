@@ -3,14 +3,14 @@ export interface Message {
   author: 'client' | 'bot'
   text: string
   time: string
+  createdAt: string
 }
 
 export interface Chat {
   id: string
   name: string
-  handle: string
+  telegramId: string
   initials: string
   color: string
-  unread: number
   messages: Message[]
 }
