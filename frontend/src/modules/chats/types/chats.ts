@@ -1,3 +1,5 @@
+export type ChatsConnection = 'connecting' | 'syncing' | 'live' | 'disconnected'
+
 export interface Message {
   id: string
   author: 'client' | 'bot'

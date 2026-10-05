@@ -7,7 +7,7 @@ import { useChats } from "../../hooks/use-chats";
 import styles from "./chats-page.module.css";
 
 export function ChatsPage() {
-    const { chats, loading, error } = useChats();
+    const { chats, loading, error, connection } = useChats();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [conversationOpen, setConversationOpen] = useState(false);
     const selectedChat = chats.find((chat) => chat.id === selectedId) ??
@@ -36,13 +36,21 @@ export function ChatsPage() {
                     </span>
                 </a>
                 <Badge variant="outline" className={styles.statusBadge}>
-                    {loading ? "Загрузка…" : "Автообновление"}
+                    {loading
+                        ? "Загрузка…"
+                        : connection === "live"
+                        ? "Обновления онлайн"
+                        : connection === "syncing"
+                        ? "Синхронизация…"
+                        : connection === "connecting"
+                        ? "Подключение…"
+                        : "Нет соединения"}
                 </Badge>
             </header>
             {error && (
                 <Alert variant="destructive" className={styles.errorBanner}>
                     <AlertDescription>
-                        {error} Повторим запрос автоматически.
+                        {error}
                     </AlertDescription>
                 </Alert>
             )}
