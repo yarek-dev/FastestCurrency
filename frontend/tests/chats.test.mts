@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
-import { toChats, type ClientRecord, type MessageRecord } from '../src/modules/chats/api/chats.ts'
+import { test } from 'vitest'
+import { compareMessages, toChats, type ClientRecord, type MessageRecord } from '../src/modules/chats/api/chats.ts'
 
 const client: ClientRecord = {
   id: 1, user_telegram_id: '123', first_name: 'Анна', last_name: null,
@@ -9,6 +9,12 @@ const client: ClientRecord = {
 const message: MessageRecord = {
   id: 10, client_id: 1, created_at: '2026-10-05T10:00:00Z', author: 'client', body: 'Привет',
 }
+
+test('message order preserves microseconds and bigint tie breakers', () => {
+  assert.ok(compareMessages({ ...message, id: '9007199254740993' }, { ...message, id: '9007199254740992' }) > 0)
+  assert.ok(compareMessages({ ...message, created_at: '2026-10-05T10:00:00.123455Z' },
+    { ...message, id: 9, created_at: '2026-10-05T10:00:00.123456Z' }) < 0)
+})
 
 test('messages are grouped by client and displayed chronologically', () => {
   const chats = toChats({

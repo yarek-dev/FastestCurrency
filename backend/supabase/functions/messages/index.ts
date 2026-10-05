@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
 import { corsHeaders } from '../_shared/cors.ts'
+import { parsePagination, toPage } from './pagination.ts'
 
 const supabase = createSupabaseAdminClient()
 
@@ -23,10 +24,16 @@ export default {
       )
     }
 
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .order('created_at', { ascending: false })
+    let parameters: ReturnType<typeof parsePagination>
+    try {
+      parameters = parsePagination(new URL(request.url))
+    } catch {
+      return Response.json({ error: 'Invalid pagination parameters' }, {
+        status: 400, headers: corsHeaders,
+      })
+    }
+
+    const { data, error } = await supabase.rpc('inbox_message_page', parameters)
 
     if (error) {
       console.error('Failed to load messages', error)
@@ -36,7 +43,7 @@ export default {
       )
     }
 
-    return Response.json(data, {
+    return Response.json(toPage(data ?? []), {
       headers: { ...corsHeaders, 'Cache-Control': 'no-store' },
     })
   },

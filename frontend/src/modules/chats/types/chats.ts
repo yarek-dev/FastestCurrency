@@ -15,4 +15,5 @@ export interface Chat {
   initials: string
   color: string
   messages: Message[]
+  lastMessage?: Message
 }

@@ -1,9 +1,11 @@
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment } from "react";
 import { Avatar, AvatarFallback } from "../../../../../components/ui/avatar";
 import { Badge } from "../../../../../components/ui/badge";
 import { Button } from "../../../../../components/ui/button";
 import type { Chat } from "../../../types/chats";
 import styles from "./conversation.module.css";
+import { useConversationScroll, type ConversationPosition } from "../../../hooks/use-conversation-scroll";
+import type { useMessages } from "../../../hooks/use-messages";
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
@@ -16,20 +18,17 @@ function messageDate(createdAt: string) {
 }
 
 export function Conversation(
-    { chat, onBack, className = "" }: { chat: Chat; onBack: () => void; className?: string },
+    { chat, onBack, history, positions, className = "" }: {
+        chat: Chat; onBack: () => void; className?: string;
+        history: ReturnType<typeof useMessages>;
+        positions: Map<string, ConversationPosition>;
+    },
 ) {
-    const historyRef = useRef<HTMLDivElement>(null);
-    const followLatestRef = useRef(true);
-    const previousChatIdRef = useRef(chat.id);
-
-    useEffect(() => {
-        const history = historyRef.current;
-        if (previousChatIdRef.current !== chat.id) {
-            followLatestRef.current = true;
-            previousChatIdRef.current = chat.id;
-        }
-        if (history && followLatestRef.current) history.scrollTop = history.scrollHeight;
-    }, [chat.id, chat.messages]);
+    const { historyRef, markerRef, onScroll, hasNewMessages, scrollToLatest } = useConversationScroll({
+        clientId: chat.id, messages: chat.messages, positions,
+        hasMore: history.hasMore, loading: history.loading || history.loadingMore,
+        error: history.error, loadMore: history.loadMore,
+    });
 
     return (
         <section
@@ -59,16 +58,19 @@ export function Conversation(
                 </div>
                 <Badge variant="outline" className={styles.channel}>Telegram</Badge>
             </header>
-            <div className={styles.history} ref={historyRef} onScroll={() => {
-                const history = historyRef.current;
-                if (history) followLatestRef.current = history.scrollHeight - history.scrollTop - history.clientHeight < 80;
-            }}>
+            <div className={styles.history} ref={historyRef} onScroll={onScroll}>
+                <div ref={markerRef} aria-hidden="true" className={styles.loadMarker} />
+                {history.error && <div className={styles.historyError} role="alert">
+                    <span>Не удалось загрузить сообщения.</span>
+                    <Button variant="outline" size="sm" onClick={history.retry}>Повторить загрузку</Button>
+                </div>}
+                {history.loading && <p className={styles.noResults} role="status">Загружаем сообщения…</p>}
                 <div className={styles.historyIntro}>
                     <span className={styles.introLine} />
                     <span>История сообщений</span>
                     <span className={styles.introLine} />
                 </div>
-                {chat.messages.length === 0 && <p className={styles.noResults}>У этого клиента пока нет загруженных сообщений.</p>}
+                {!history.loading && !history.error && chat.messages.length === 0 && <p className={styles.noResults}>У этого клиента пока нет сообщений.</p>}
                 <ol className={styles.messages}>
                     {chat.messages.map((message, index) => (
                       <Fragment key={message.id}>
@@ -76,6 +78,7 @@ export function Conversation(
                             <li className={styles.dateSeparator}><time className={styles.date} dateTime={message.createdAt}>{messageDate(message.createdAt)}</time></li>
                         )}
                         <li
+                            data-message-id={message.id}
                             className={`${styles.messageRow} ${
                                 message.author === "bot" ? styles.outgoing : ""
                             }`}
@@ -96,6 +99,9 @@ export function Conversation(
                     ))}
                 </ol>
             </div>
+            {hasNewMessages && <div className={styles.newMessages}>
+                <Button size="sm" onClick={scrollToLatest}>Новые сообщения ↓</Button>
+            </div>}
             <footer className={styles.conversationFooter}>
                 <svg
                     width="16"

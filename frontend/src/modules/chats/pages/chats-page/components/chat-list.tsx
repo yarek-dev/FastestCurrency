@@ -60,7 +60,7 @@ export function ChatList(
             </div>
             <ul className={styles.chatList}>
                 {visibleChats.map((chat) => {
-                    const lastMessage = chat.messages[chat.messages.length - 1];
+                    const lastMessage = chat.lastMessage;
                     return (
                         <li key={chat.id}>
                             <Button

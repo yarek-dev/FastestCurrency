@@ -68,6 +68,36 @@
     padding: 25px 40px 30px;
     scrollbar-width: thin;
     scrollbar-color: #dce3ed transparent;
+    overflow-anchor: none;
+}
+
+.loadMarker {
+    height: 1px;
+}
+
+.historyError {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+    color: #8b4b4b;
+    font-size: 12px;
+}
+
+.newMessages {
+    height: 0;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    z-index: 1;
+}
+
+.newMessages button {
+    position: absolute;
+    bottom: 16px;
+    box-shadow: 0 3px 12px #25334720;
 }
 
 .historyIntro {

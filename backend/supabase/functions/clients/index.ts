@@ -23,10 +23,7 @@ export default {
       )
     }
 
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .order('last_message_at', { ascending: false })
+    const { data, error } = await supabase.rpc('list_inbox_clients')
 
     if (error) {
       console.error('Failed to load clients', error)

@@ -114,9 +114,10 @@ pnpm telegram:webhook:set
 | Команда | Назначение |
 | --- | --- |
 | `pnpm typecheck` | Проверка типов Edge Function и служебного скрипта. |
-| `pnpm test` | Запуск 95 unit-тестов через Deno. |
+| `pnpm test` | Запуск unit-тестов через Deno. |
+| `pnpm test:db` | SQL-тесты в локальном Supabase (нужен Docker и `pnpm supabase start`). |
 | `pnpm test:watch` | Запуск Deno-тестов при изменении файлов. |
-| `pnpm deploy` | Развёртывание `telegram-webhook` в связанном Supabase-проекте. |
+| `pnpm deploy` | Развёртывание Edge Functions в связанном Supabase-проекте. |
 | `pnpm telegram:webhook:set` | Регистрация URL и секрета webhook в Telegram. |
 
 ## Работа webhook
@@ -131,9 +132,23 @@ Telegram отправляет `POST` на URL Edge Function вместе с се
 
 C4-диаграммы и подробное описание слоёв находятся в [`docs/architecture`](../docs/architecture/README.md).
 
+## История чатов
+
+Webhook сохраняет сообщения клиента и ответы бота в PostgreSQL. Публичный учебный фронтенд читает список клиентов через `clients`, историю через `messages`, а новые записи получает через Supabase Realtime.
+
+`GET /functions/v1/clients` возвращает клиентов с `last_message` для превью. `GET /functions/v1/messages?client_id=123` возвращает `{ items, nextCursor }`: последние 20 записей от новых к старым. Для следующей страницы передайте `cursor=<nextCursor>`. Курсор содержит точные `created_at` и `id`; ID возвращаются строками для сохранения bigint. `direction=after` возвращает записи после курсора от старых к новым и используется для восстановления после разрыва соединения. Ответ с `nextCursor: null` означает конец истории. Некорректные параметры возвращают HTTP 400.
+
+Миграция `20261005150000_add_message_cursor_pagination.sql` добавляет индекс истории по клиенту и серверные RPC-функции. Сначала примените миграцию, затем разверните обе функции:
+
+```powershell
+pnpm supabase db push
+pnpm supabase functions deploy clients
+pnpm supabase functions deploy messages
+```
+
 ## Ограничения
 
-- приложение не использует базу данных, кэш или очередь;
+- история хранится в PostgreSQL; кэш фронтенда живёт только до перезагрузки страницы;
 - доступность курсов зависит от внешних провайдеров;
 - Frankfurter поддерживает только фиатные валюты;
 - криптовалютные курсы требуют `CURRENCY_BEACON_API_KEY`;

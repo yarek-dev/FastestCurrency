@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, AlertDescription } from "../../../../components/ui/alert";
 import { Badge } from "../../../../components/ui/badge";
+import { Button } from "../../../../components/ui/button";
 import { ChatList } from "./components/chat-list";
 import { Conversation } from "./components/conversation";
 import { useChats } from "../../hooks/use-chats";
 import styles from "./chats-page.module.css";
+import type { ConversationPosition } from "../../hooks/use-conversation-scroll";
 
 export function ChatsPage() {
-    const { chats, loading, error, connection } = useChats();
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const { chats, selectedChat, history, loading, error, connection, retryClients } = useChats(selectedId);
     const [conversationOpen, setConversationOpen] = useState(false);
-    const selectedChat = chats.find((chat) => chat.id === selectedId) ??
-        chats[0];
+    const positions = useRef(new Map<string, ConversationPosition>());
 
     function selectChat(id: string) {
         setSelectedId(id);
@@ -51,6 +52,7 @@ export function ChatsPage() {
                 <Alert variant="destructive" className={styles.errorBanner}>
                     <AlertDescription>
                         {error}
+                        <Button variant="outline" size="sm" onClick={retryClients}>Повторить загрузку</Button>
                     </AlertDescription>
                 </Alert>
             )}
@@ -75,6 +77,8 @@ export function ChatsPage() {
                         <Conversation
                             className={styles.conversation}
                             chat={selectedChat}
+                            history={history}
+                            positions={positions.current}
                             onBack={() => setConversationOpen(false)}
                         />
                     )
