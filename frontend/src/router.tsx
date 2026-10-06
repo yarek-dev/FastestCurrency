@@ -14,6 +14,7 @@ const chatsRoute = createRoute({
 });
 
 export const router = createRouter({
+    basepath: import.meta.env.BASE_URL,
     routeTree: rootRoute.addChildren([chatsRoute]),
 });
 
