@@ -30,7 +30,7 @@
 .brandMark {
     width: 36px;
     height: 36px;
-    background: var(--accent);
+    background: var(--brand-accent);
     color: white;
     display: grid;
     place-items: center;
@@ -61,20 +61,20 @@
     grid-template-columns: 350px minmax(0, 1fr);
     flex: 1;
     min-height: 0;
-    border: 1px solid #dee5ee;
+    border: 1px solid var(--border);
     border-radius: 18px;
     overflow: hidden;
     background: var(--surface);
-    box-shadow: 0 12px 40px #25334706;
+    box-shadow: 0 12px 40px var(--workspace-shadow);
 }
 
 .errorBanner {
     margin: 0 0 12px;
     padding: 12px 16px;
-    border: 1px solid #e1d4d4;
+    border: 1px solid var(--error-border);
     border-radius: 9px;
     background: var(--surface);
-    color: #8b4b4b;
+    color: var(--error);
     font-size: 12px;
     line-height: 1.5;
 }
@@ -95,7 +95,7 @@
     flex-direction: column;
     min-height: 0;
     min-width: 0;
-    background: #f8fafd;
+    background: var(--panel);
 }
 
 .emptyConversation h2 {

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { ThemeSwitch } from "@frontend/src/components/theme-switch/theme-switch";
 import { Alert, AlertDescription } from "@frontend/src/components/ui/alert";
 import { Button } from "@frontend/src/components/ui/button";
 import { ChatList } from "./components/chat-list";
@@ -34,6 +35,7 @@ export function ChatsPage() {
                         <span className={styles.brandSubtitle}>admin panel</span>
                     </span>
                 </a>
+                <ThemeSwitch />
             </header>
             {error && (
                 <Alert variant="destructive" className={styles.errorBanner}>

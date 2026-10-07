@@ -5,7 +5,7 @@
     display: grid;
     place-items: center;
     border-radius: 14px;
-    color: #526174;
+    color: var(--avatar-ink);
     font-weight: 600;
     font-size: 13px;
     letter-spacing: -.4px;
@@ -23,7 +23,7 @@
     flex-direction: column;
     min-height: 0;
     min-width: 0;
-    background: #f8fafd;
+    background: var(--panel);
 }
 
 .conversationHeader {
@@ -31,7 +31,7 @@
     gap: 12px;
     align-items: center;
     padding: 22px 32px;
-    border-bottom: 1px solid #e9edf3;
+    border-bottom: 1px solid var(--border-soft);
     background: var(--surface);
 }
 
@@ -55,10 +55,10 @@
     font-weight: 400;
     margin-left: auto;
     padding: 5px 10px;
-    border: 1px solid #e6ebf2;
+    border: 1px solid var(--border-soft);
     border-radius: 6px;
     font-size: 10px;
-    color: #7b8a9c;
+    color: var(--muted);
 }
 
 .history {
@@ -67,7 +67,7 @@
     overflow-y: auto;
     padding: 25px 40px 30px;
     scrollbar-width: thin;
-    scrollbar-color: #dce3ed transparent;
+    scrollbar-color: var(--scrollbar) transparent;
     overflow-anchor: none;
 }
 
@@ -82,7 +82,7 @@
     flex-wrap: wrap;
     gap: 12px;
     padding: 12px;
-    color: #8b4b4b;
+    color: var(--error);
     font-size: 12px;
 }
 
@@ -101,9 +101,9 @@
     height: 44px;
     border-radius: 50%;
     color: var(--accent);
-    border-color: #dce3ed;
+    border-color: var(--scrollbar);
     background: var(--surface);
-    box-shadow: 0 3px 12px #25334720;
+    box-shadow: 0 3px 12px var(--shadow);
 }
 
 .scrollToLatest:hover {
@@ -132,7 +132,7 @@
     align-items: center;
     justify-content: center;
     gap: 14px;
-    color: #9aa5b3;
+    color: var(--muted);
     font-size: 10px;
     margin-bottom: 25px;
 }
@@ -140,7 +140,7 @@
 .introLine {
     width: 44px;
     height: 1px;
-    background: #e2e8f1;
+    background: var(--border-soft);
 }
 
 .date {
@@ -148,9 +148,9 @@
     margin: 0 auto 25px;
     padding: 5px 11px;
     border-radius: 6px;
-    color: #8a96a6;
+    color: var(--muted);
     font-size: 10px;
-    background: #edf1f6;
+    background: var(--date-surface);
 }
 
 .messages {
@@ -174,14 +174,14 @@
     max-width: min(80%, 470px);
     padding: 12px 15px 8px;
     background: var(--surface);
-    border: 1px solid #e8edf4;
+    border: 1px solid var(--border-soft);
     border-radius: 13px 13px 13px 4px;
-    box-shadow: 0 2px 3px #25334702;
+    box-shadow: 0 2px 3px var(--message-shadow);
 }
 
 .outgoing .message {
     background: var(--accent-soft);
-    border-color: #e2e7fb;
+    border-color: var(--accent-border);
     border-radius: 13px 13px 4px 13px;
 }
 
@@ -207,7 +207,7 @@
     gap: 6px;
     margin-top: 5px;
     font-size: 9px;
-    color: #97a2b3;
+    color: var(--muted);
     font-variant-numeric: tabular-nums;
 }
 
@@ -216,15 +216,15 @@
     align-items: center;
     gap: 8px;
     background: var(--surface);
-    border-top: 1px solid #e9edf3;
+    border-top: 1px solid var(--border-soft);
     padding: 19px 32px;
     font-size: 11px;
-    color: #8390a2;
+    color: var(--muted);
 }
 
 .footerDescription {
     margin-left: auto;
-    color: #a4afbd;
+    color: var(--muted);
     font-size: 10px;
 }
 

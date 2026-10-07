@@ -47,7 +47,7 @@ export function Conversation(
                 </Button>
                 <Avatar
                     className={styles.avatar}
-                    style={{ backgroundColor: chat.color }}
+                    style={{ backgroundColor: `color-mix(in srgb, ${chat.color} var(--avatar-tint), var(--surface))` }}
                     aria-hidden="true"
                 >
                     <AvatarFallback>{chat.initials}</AvatarFallback>

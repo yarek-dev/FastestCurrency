@@ -1,16 +1,64 @@
 :root {
     font-family: "Segoe UI", Arial, sans-serif;
-    color: #253347;
-    background: #eef3f8;
+    color: var(--ink);
+    background: var(--canvas);
+    color-scheme: light;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    --surface: #ffffff;
-    --canvas: #eef3f8;
-    --ink: #253347;
-    --muted: #7f8a98;
-    --accent: #4868df;
-    --accent-soft: #edf0ff;
+    --surface: #f9fafc;
+    --canvas: #e9edf4;
+    --ink: #28344b;
+    --muted: #63718a;
+    --accent: #526caf;
+    --accent-soft: #e5ebf8;
+    --accent-hover: #425b9b;
+    --accent-contrast: #ffffff;
+    --brand-accent: #4868df;
+    --panel: #f1f4f9;
+    --inset: #edf1f7;
+    --hover: #eef2f9;
+    --border: #d3dbe8;
+    --border-soft: #e0e6ef;
+    --accent-border: #c5d1eb;
+    --error: #8b4b4b;
+    --error-border: #e1d4d4;
+    --date-surface: #e6ecf5;
+    --scrollbar: #c7d2e3;
+    --shadow: #28344b20;
+    --workspace-shadow: #28344b06;
+    --message-shadow: #28344b02;
+    --selection: #d5dff5;
+    --avatar-tint: 65%;
+    --avatar-ink: #526174;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #15181c;
+    --canvas: #0b0d10;
+    --ink: #dce0e5;
+    --muted: #939ca6;
+    --accent: #92a7dc;
+    --accent-soft: #1e283b;
+    --accent-hover: #a8bae7;
+    --accent-contrast: #0b0d10;
+    --panel: #0f1215;
+    --inset: #0f1215;
+    --hover: #1d2228;
+    --border: #2b3139;
+    --border-soft: #22282f;
+    --accent-border: #384969;
+    --error: #f0aaaa;
+    --error-border: #71494f;
+    --date-surface: #1d2228;
+    --scrollbar: #3b444f;
+    --shadow: #00000050;
+    --workspace-shadow: #00000030;
+    --message-shadow: #00000020;
+    --selection: #32415f;
+    --avatar-tint: 24%;
+    --avatar-ink: #dce0e5;
 }
 
 * {
@@ -40,5 +88,5 @@ button {
 }
 
 ::selection {
-    background: #d9e1ff;
+    background: var(--selection);
 }
