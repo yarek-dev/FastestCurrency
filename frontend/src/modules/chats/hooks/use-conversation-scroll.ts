@@ -8,10 +8,10 @@
 import type { Message } from "../types/chats";
 
 export interface ConversationPosition {
-    messageId: string | null;
-    offset: number;
     scrollTop: number;
+    scrollHeight: number;
     atBottom: boolean;
+    firstId: string | undefined;
     latestId: string | undefined;
     unread: boolean;
 }
@@ -38,33 +38,26 @@ export function useConversationScroll({
     const historyRef = useRef<HTMLDivElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
     const [hasNewMessages, setHasNewMessages] = useState(false);
-    const unread = useRef(false);
+    const firstId = messages[0]?.id;
     const latestId = messages.at(-1)?.id;
 
     const remember = useCallback(() => {
         const history = historyRef.current;
         if (!history || !history.clientHeight || !messages.length) return;
-        const top = history.getBoundingClientRect().top;
-        const anchor = [
-            ...history.querySelectorAll<HTMLElement>("[data-message-id]"),
-        ]
-            .find((element) => element.getBoundingClientRect().bottom > top);
         const atBottom =
             history.scrollHeight - history.scrollTop - history.clientHeight <
                 80;
-        if (atBottom) {
-            unread.current = false;
-            setHasNewMessages(false);
-        }
+        const unread = !atBottom && (positions.get(clientId)?.unread ?? false);
+        setHasNewMessages(unread);
         positions.set(clientId, {
-            messageId: anchor?.dataset.messageId ?? null,
-            offset: anchor ? anchor.getBoundingClientRect().top - top : 0,
             scrollTop: history.scrollTop,
+            scrollHeight: history.scrollHeight,
             atBottom,
+            firstId,
             latestId,
-            unread: unread.current,
+            unread,
         });
-    }, [clientId, messages.length, latestId, positions]);
+    }, [clientId, messages.length, firstId, latestId, positions]);
 
     const restore = useCallback(() => {
         const history = historyRef.current;
@@ -72,22 +65,20 @@ export function useConversationScroll({
         const saved = positions.get(clientId);
         if (!saved || saved.atBottom) {
             history.scrollTop = history.scrollHeight;
-            unread.current = false;
         } else {
-            const anchor = saved.messageId
-                ? history.querySelector<HTMLElement>(
-                    `[data-message-id="${saved.messageId}"]`,
-                )
-                : null;
-            if (anchor) {
-                history.scrollTop += anchor.getBoundingClientRect().top -
-                    history.getBoundingClientRect().top - saved.offset;
-            } else history.scrollTop = saved.scrollTop;
-            unread.current = saved.unread || saved.latestId !== latestId;
+            // Older pages change the first ID; new messages at the bottom do not.
+            const prepended = saved.firstId !== firstId;
+            const addedHeight = prepended
+                ? history.scrollHeight - saved.scrollHeight
+                : 0;
+            history.scrollTop = saved.scrollTop + addedHeight;
         }
-        setHasNewMessages(unread.current);
+        if (saved) {
+            saved.unread = !saved.atBottom &&
+                (saved.unread || saved.latestId !== latestId);
+        }
         remember();
-    }, [clientId, latestId, messages.length, positions, remember]);
+    }, [clientId, firstId, latestId, messages.length, positions, remember]);
 
     useLayoutEffect(restore, [restore, messages]);
     useEffect(() => {
@@ -129,8 +120,6 @@ export function useConversationScroll({
         const history = historyRef.current;
         if (!history) return;
         history.scrollTop = history.scrollHeight;
-        unread.current = false;
-        setHasNewMessages(false);
         remember();
     }, [remember]);
 

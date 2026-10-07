@@ -4,7 +4,6 @@ import { useConversationScroll, type ConversationPosition } from '../src/modules
 import type { Message } from '../src/modules/chats/types/chats'
 
 let height = 1000
-let prependOffset = 0
 let intersection: IntersectionObserverCallback
 const observe = vi.fn()
 const disconnect = vi.fn()
@@ -26,7 +25,6 @@ function Harness({ messages, clientId = '1', loading = false }: { messages: Mess
 beforeEach(() => {
   positions.clear()
   height = 1000
-  prependOffset = 0
   vi.clearAllMocks()
   vi.stubGlobal('ResizeObserver', class { observe() {}; disconnect() {} })
   vi.stubGlobal('IntersectionObserver', class {
@@ -39,10 +37,6 @@ beforeEach(() => {
   })
   vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200)
   vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(() => height)
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
-    const top = this.dataset.messageId ? Number(this.dataset.messageId) * 40 + prependOffset - (this.parentElement?.scrollTop ?? 0) : 0
-    return { top, bottom: top + 40, height: 40 } as DOMRect
-  })
 })
 
 test('prefetches with one viewport margin and disconnects on unmount', () => {
@@ -53,15 +47,14 @@ test('prefetches with one viewport margin and disconnects on unmount', () => {
   expect(disconnect).toHaveBeenCalled()
 })
 
-test('preserves the visible anchor and shows new messages until jumping to bottom', () => {
+test('preserves scroll position and shows new messages until jumping to bottom', () => {
   const view = render(<Harness messages={rows(20)} />)
   const history = screen.getByTestId('history')
   act(() => { history.scrollTop = 300; history.dispatchEvent(new Event('scroll')) })
-  const saved = positions.get('1')!
   height = 1040
   view.rerender(<Harness messages={rows(21)} />)
   expect(history.scrollTop).toBe(300)
-  expect(positions.get('1')!.messageId).toBe(saved.messageId)
+  expect(positions.get('1')!.scrollTop).toBe(300)
   act(() => screen.getByRole('button', { name: 'New messages' }).click())
   expect(history.scrollTop).toBe(height)
   expect(screen.queryByRole('button')).toBeNull()
@@ -76,17 +69,36 @@ test('restores the saved reading position when returning to a chat', () => {
   expect(history.scrollTop).toBe(300)
 })
 
-test('compensates for older messages prepended above the visible message', () => {
+test('follows new messages when already at the bottom', () => {
+  const view = render(<Harness messages={rows(20)} />)
+  const history = screen.getByTestId('history')
+  height = 1040
+  view.rerender(<Harness messages={rows(21)} />)
+  expect(history.scrollTop).toBe(height)
+  expect(screen.queryByRole('button')).toBeNull()
+})
+
+test('keeps the reading position and shows missed messages when returning to a chat', () => {
   const view = render(<Harness messages={rows(20)} />)
   const history = screen.getByTestId('history')
   act(() => { history.scrollTop = 300; history.dispatchEvent(new Event('scroll')) })
-  const saved = positions.get('1')!
+  view.rerender(<Harness messages={rows(20)} clientId="2" />)
+  height = 1040
+  view.rerender(<Harness messages={rows(21)} />)
+  expect(history.scrollTop).toBe(300)
+  expect(screen.getByRole('button', { name: 'New messages' })).toBeTruthy()
+})
+
+test('compensates for the height of older messages prepended above', () => {
+  const view = render(<Harness messages={rows(20)} />)
+  const history = screen.getByTestId('history')
+  act(() => { history.scrollTop = 300; history.dispatchEvent(new Event('scroll')) })
   height += 800
-  prependOffset = 800
   const older = Array.from({ length: 20 }, (_, index) => ({ id: String(index - 19) }) as Message)
   view.rerender(<Harness messages={[...older, ...rows(20)]} />)
   expect(history.scrollTop).toBe(1100)
-  expect(positions.get('1')!.messageId).toBe(saved.messageId)
-  expect(positions.get('1')!.offset).toBe(saved.offset)
+  expect(positions.get('1')!.scrollTop).toBe(1100)
   expect(screen.queryByRole('button')).toBeNull()
+  view.rerender(<Harness messages={[...older, ...rows(20)]} />)
+  expect(history.scrollTop).toBe(1100)
 })
