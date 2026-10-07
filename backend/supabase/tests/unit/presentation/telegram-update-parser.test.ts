@@ -1,6 +1,6 @@
 import { deepStrictEqual } from 'node:assert/strict'
 
-import { parseTelegramInput } from '../../../functions/telegram-webhook/presentation/telegram/input/telegram-update-parser.ts'
+import { parseTelegramInput } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/input/telegram-update-parser.ts'
 
 const conversionCases = [
   ['EUR', { amount: 1, base: 'EUR', quote: 'USD' }],

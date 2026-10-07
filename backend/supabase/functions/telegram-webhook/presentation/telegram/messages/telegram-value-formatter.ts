@@ -1,7 +1,7 @@
 import type {
   CurrencyProviderName,
   RateObservation,
-} from '../../../domain/currency.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
 
 function trimTrailingZeroes(value: string): string {
   return value.replace(/\.?0+$/, '')

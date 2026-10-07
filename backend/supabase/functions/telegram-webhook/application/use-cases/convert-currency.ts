@@ -1,8 +1,8 @@
 import type {
   ConversionResult,
   CurrencyConversion,
-} from '../../domain/currency.ts'
-import type { GetExchangeRatePair } from '../ports/exchange-rate-provider.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
+import type { GetExchangeRatePair } from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
 
 export type ConvertCurrency = (
   input: CurrencyConversion,

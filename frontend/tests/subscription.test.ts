@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { subscribeToChats } from '../src/modules/chats/api/chats-subscription'
+import { subscribeToChats } from '@frontend/src/modules/chats/api/chats-subscription'
 
 const { handlers, channel, removeChannel, createClient } = vi.hoisted(() => {
   const handlers: Array<{ event: string; table: string; callback: (payload: unknown) => void }> = []

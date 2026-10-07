@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { useConversationScroll, type ConversationPosition } from '../src/modules/chats/hooks/use-conversation-scroll'
-import type { Message } from '../src/modules/chats/types/chats'
+import { useConversationScroll, type ConversationPosition } from '@frontend/src/modules/chats/hooks/use-conversation-scroll'
+import type { Message } from '@frontend/src/modules/chats/types/chats'
 
 let height = 1000
 let intersection: IntersectionObserverCallback

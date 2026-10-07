@@ -1,4 +1,4 @@
-import type { CurrencyConversion } from "../../../domain/currency.ts"
+import type { CurrencyConversion } from "@backend/supabase/functions/telegram-webhook/domain/currency.ts"
 
 export type ParseErrorReason =
   | "invalid-amount"

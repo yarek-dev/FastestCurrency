@@ -1,12 +1,12 @@
-import type { ConvertCurrency } from '../../../application/use-cases/convert-currency.ts'
+import type { ConvertCurrency } from '@backend/supabase/functions/telegram-webhook/application/use-cases/convert-currency.ts'
 import {
   isAllProvidersFailedError,
   isUnsupportedCurrencyError,
-} from '../../../domain/errors.ts'
-import { createSendMessageAction } from '../telegram-actions.ts'
-import { createPeriodKeyboard } from '../input/telegram-callback-data.ts'
-import { parseTelegramInput } from '../input/telegram-update-parser.ts'
-import { formatConversionResult } from '../messages/telegram-result-formatter.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
+import { createSendMessageAction } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-actions.ts'
+import { createPeriodKeyboard } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/input/telegram-callback-data.ts'
+import { parseTelegramInput } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/input/telegram-update-parser.ts'
+import { formatConversionResult } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-result-formatter.ts'
 import {
   formatFallbackUnavailable,
   formatHelpMessage,
@@ -14,8 +14,8 @@ import {
   formatServiceUnavailable,
   formatStartMessage,
   formatUnsupportedCurrency,
-} from '../messages/telegram-static-messages.ts'
-import type { TelegramUpdate, TelegramWebhookAction } from '../telegram-types.ts'
+} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-static-messages.ts'
+import type { TelegramUpdate, TelegramWebhookAction } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
 
 export type HandleTelegramMessage = (
   update: TelegramUpdate,

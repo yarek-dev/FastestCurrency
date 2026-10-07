@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSWRConfig } from "swr";
-import { subscribeToChats } from "../api/chats-subscription";
+import { subscribeToChats } from "@frontend/src/modules/chats/api/chats-subscription";
 import {
     type ClientRecord,
     clientsKey,
@@ -8,9 +8,9 @@ import {
     liveMessagesKey,
     mergeMessages,
     type MessageRecord,
-} from "../api/chats";
-import { mergeClients } from "../api/merge-clients";
-import type { ChatsConnection } from "../types/chats";
+} from "@frontend/src/modules/chats/api/chats";
+import { mergeClients } from "@frontend/src/modules/chats/api/merge-clients";
+import type { ChatsConnection } from "@frontend/src/modules/chats/types/chats";
 
 interface ClientsState {
     data: ClientRecord[] | undefined;

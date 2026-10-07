@@ -5,7 +5,7 @@
     useRef,
     useState,
 } from "react";
-import type { Message } from "../types/chats";
+import type { Message } from "@frontend/src/modules/chats/types/chats";
 
 export interface ConversationPosition {
     scrollTop: number;

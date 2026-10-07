@@ -293,6 +293,9 @@
     "dependencies": [
       "jsr:@supabase/functions-js@2",
       "npm:@supabase/server@1"
-    ]
+    ],
+    "links": {
+      "npm:@fullstack-bot/backend@1.0.0": {}
+    }
   }
 }

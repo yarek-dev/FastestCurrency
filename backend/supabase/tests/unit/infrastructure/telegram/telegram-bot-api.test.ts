@@ -3,7 +3,7 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import { createAnswerCallbackQuery } from '../../../../functions/telegram-webhook/infrastructure/telegram/telegram-bot-api.ts'
+import { createAnswerCallbackQuery } from '@backend/supabase/functions/telegram-webhook/infrastructure/telegram/telegram-bot-api.ts'
 
 Deno.test('acknowledges a callback through Telegram Bot API', async () => {
   const originalFetch = globalThis.fetch

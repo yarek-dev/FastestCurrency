@@ -428,14 +428,17 @@ entrypoint = "./functions/telegram-webhook/index.ts"
 [functions.profile]
 enabled = true
 verify_jwt = false
+import_map = "./functions/telegram-webhook/deno.json"
 entrypoint = "./functions/profile/index.ts"
 
 [functions.clients]
 enabled = true
 verify_jwt = false
+import_map = "./functions/telegram-webhook/deno.json"
 entrypoint = "./functions/clients/index.ts"
 
 [functions.messages]
 enabled = true
 verify_jwt = false
+import_map = "./functions/telegram-webhook/deno.json"
 entrypoint = "./functions/messages/index.ts"

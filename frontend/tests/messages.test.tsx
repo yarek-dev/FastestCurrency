@@ -2,17 +2,17 @@
 import { SWRConfig, useSWRConfig, type SWRConfiguration } from 'swr'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropsWithChildren } from 'react'
-import { useMessages } from '../src/modules/chats/hooks/use-messages'
-import { useChats } from '../src/modules/chats/hooks/use-chats'
-import { swrOptions } from '../src/modules/chats/api/swr-config'
-import { loadClients, loadMessagePage, liveMessagesKey, mergeMessages, messageCursor, type MessageRecord } from '../src/modules/chats/api/chats'
-import { subscribeToChats } from '../src/modules/chats/api/chats-subscription'
+import { useMessages } from '@frontend/src/modules/chats/hooks/use-messages'
+import { useChats } from '@frontend/src/modules/chats/hooks/use-chats'
+import { swrOptions } from '@frontend/src/modules/chats/api/swr-config'
+import { loadClients, loadMessagePage, liveMessagesKey, mergeMessages, messageCursor, type MessageRecord } from '@frontend/src/modules/chats/api/chats'
+import { subscribeToChats } from '@frontend/src/modules/chats/api/chats-subscription'
 
-vi.mock('../src/modules/chats/api/chats', async importOriginal => ({
-  ...await importOriginal<typeof import('../src/modules/chats/api/chats')>(),
+vi.mock('@frontend/src/modules/chats/api/chats', async importOriginal => ({
+  ...await importOriginal<typeof import('@frontend/src/modules/chats/api/chats')>(),
   loadClients: vi.fn(), loadMessagePage: vi.fn(),
 }))
-vi.mock('../src/modules/chats/api/chats-subscription', () => ({ subscribeToChats: vi.fn() }))
+vi.mock('@frontend/src/modules/chats/api/chats-subscription', () => ({ subscribeToChats: vi.fn() }))
 
 function message(id: number, client = '1'): MessageRecord {
   return { id: String(id), client_id: client, created_at: '2026-10-05T10:00:00.123456Z', author: 'client', body: `Message ${id}` }

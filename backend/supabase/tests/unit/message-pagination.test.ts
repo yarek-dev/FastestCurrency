@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual, throws } from 'node:assert/strict'
-import { decodeCursor, encodeCursor, parsePagination, toPage } from '../../functions/messages/pagination.ts'
+import { decodeCursor, encodeCursor, parsePagination, toPage } from '@backend/supabase/functions/messages/pagination.ts'
 
 Deno.test('cursor preserves microseconds and bigint IDs', () => {
   const row = { id: '9223372036854775807', created_at: '2026-10-05T10:00:00.123456+00:00' }

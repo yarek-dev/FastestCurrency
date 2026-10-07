@@ -1,7 +1,7 @@
 import { deepStrictEqual } from 'node:assert/strict'
 
-import type { MessageRecord } from '../../../functions/telegram-webhook/application/ports/message-repository.ts'
-import { createProcessTelegramUpdate } from '../../../functions/telegram-webhook/application/use-cases/process-telegram-update.ts'
+import type { MessageRecord } from '@backend/supabase/functions/telegram-webhook/application/ports/message-repository.ts'
+import { createProcessTelegramUpdate } from '@backend/supabase/functions/telegram-webhook/application/use-cases/process-telegram-update.ts'
 
 const incomingMessage: MessageRecord = {
   userTelegramId: '123',

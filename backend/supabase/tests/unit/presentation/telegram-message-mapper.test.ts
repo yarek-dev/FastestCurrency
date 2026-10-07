@@ -3,7 +3,7 @@ import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 import {
   toIncomingTelegramMessage,
   toOutgoingTelegramMessage,
-} from '../../../functions/telegram-webhook/presentation/telegram/telegram-message-mapper.ts'
+} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-message-mapper.ts'
 
 Deno.test('maps a private Telegram message to a database record', () => {
   const message = toIncomingTelegramMessage({

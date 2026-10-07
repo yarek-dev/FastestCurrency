@@ -1,7 +1,7 @@
 // Adapted from https://ui.shadcn.com/r/styles/new-york/input.json
 import * as React from "react"
 
-import { cn } from "../../lib/utils"
+import { cn } from "@frontend/src/lib/utils"
 import styles from "./ui.module.css"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(

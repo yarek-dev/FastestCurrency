@@ -3,8 +3,8 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import type { GetExchangeRate } from '../../../functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
-import { createGetPeriodChange } from '../../../functions/telegram-webhook/application/use-cases/get-period-change.ts'
+import type { GetExchangeRate } from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
+import { createGetPeriodChange } from '@backend/supabase/functions/telegram-webhook/application/use-cases/get-period-change.ts'
 
 Deno.test('gets one historical rate from the selected provider', async () => {
   let currencyBeaconCall: Parameters<GetExchangeRate> | undefined

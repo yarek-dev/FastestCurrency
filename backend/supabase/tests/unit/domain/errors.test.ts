@@ -12,7 +12,7 @@ import {
   isAllProvidersFailedError,
   isProviderConfigurationError,
   isUnsupportedCurrencyError,
-} from '../../../functions/telegram-webhook/domain/errors.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
 
 Deno.test('creates and recognizes an unsupported currency error', () => {
   const error = createUnsupportedCurrencyError(['EUR', 'ZZZ'])

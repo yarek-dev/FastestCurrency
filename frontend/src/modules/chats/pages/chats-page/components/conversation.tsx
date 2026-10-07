@@ -1,11 +1,11 @@
 import { Fragment } from "react";
-import { Avatar, AvatarFallback } from "../../../../../components/ui/avatar";
-import { Badge } from "../../../../../components/ui/badge";
-import { Button } from "../../../../../components/ui/button";
-import type { Chat } from "../../../types/chats";
+import { Avatar, AvatarFallback } from "@frontend/src/components/ui/avatar";
+import { Badge } from "@frontend/src/components/ui/badge";
+import { Button } from "@frontend/src/components/ui/button";
+import type { Chat } from "@frontend/src/modules/chats/types/chats";
 import styles from "./conversation.module.css";
-import { useConversationScroll, type ConversationPosition } from "../../../hooks/use-conversation-scroll";
-import type { useMessages } from "../../../hooks/use-messages";
+import { useConversationScroll, type ConversationPosition } from "@frontend/src/modules/chats/hooks/use-conversation-scroll";
+import type { useMessages } from "@frontend/src/modules/chats/hooks/use-messages";
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",

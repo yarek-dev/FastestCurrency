@@ -1,4 +1,4 @@
-import type { ExchangeQuote } from '../../domain/currency.ts'
+import type { ExchangeQuote } from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
 
 export type GetExchangeRate = (
   base: string,

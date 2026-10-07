@@ -4,19 +4,19 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import type { ConvertCurrency } from '../../../functions/telegram-webhook/application/use-cases/convert-currency.ts'
-import type { CurrencyConversion } from '../../../functions/telegram-webhook/domain/currency.ts'
+import type { ConvertCurrency } from '@backend/supabase/functions/telegram-webhook/application/use-cases/convert-currency.ts'
+import type { CurrencyConversion } from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
 import {
   createAllProvidersFailedError,
   createUnsupportedCurrencyError,
-} from '../../../functions/telegram-webhook/domain/errors.ts'
-import { createTelegramMessageHandler } from '../../../functions/telegram-webhook/presentation/telegram/handlers/telegram-message-handler.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
+import { createTelegramMessageHandler } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/handlers/telegram-message-handler.ts'
 import {
   formatHelpMessage,
   formatParseError,
   formatStartMessage,
-} from '../../../functions/telegram-webhook/presentation/telegram/messages/telegram-message-formatter.ts'
-import type { TelegramUpdate } from '../../../functions/telegram-webhook/presentation/telegram/telegram-types.ts'
+} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-message-formatter.ts'
+import type { TelegramUpdate } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
 
 function privateUpdate(text?: string): TelegramUpdate {
   return {

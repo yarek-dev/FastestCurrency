@@ -1,5 +1,5 @@
-import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createSupabaseAdminClient } from '@backend/supabase/functions/_shared/supabase-admin.ts'
+import { corsHeaders } from '@backend/supabase/functions/_shared/cors.ts'
 
 const supabase = createSupabaseAdminClient()
 

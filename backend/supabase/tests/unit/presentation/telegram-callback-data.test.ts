@@ -3,12 +3,12 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import type { ConversionResult } from '../../../functions/telegram-webhook/domain/currency.ts'
+import type { ConversionResult } from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
 import {
   createPeriodCallbackData,
   createPeriodKeyboard,
   parsePeriodCallbackData,
-} from '../../../functions/telegram-webhook/presentation/telegram/input/telegram-callback-data.ts'
+} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/input/telegram-callback-data.ts'
 
 const result: ConversionResult = {
   amount: 1,

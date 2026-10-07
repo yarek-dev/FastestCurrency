@@ -1,9 +1,9 @@
-import type { GetExchangeRate } from '../../application/ports/exchange-rate-provider.ts'
-import type { ExchangeQuote, RateObservation } from '../../domain/currency.ts'
+import type { GetExchangeRate } from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
+import type { ExchangeQuote, RateObservation } from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
 import {
   createProviderUnavailableError,
   createUnsupportedCurrencyError,
-} from '../../domain/errors.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
 
 const PROVIDER = 'frankfurter'
 const API_BASE_URL = 'https://api.frankfurter.dev/v1'

@@ -1,10 +1,10 @@
-import type { GetExchangeRate } from '../ports/exchange-rate-provider.ts'
+import type { GetExchangeRate } from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
 import type {
   CurrencyProviderName,
   PeriodChangeRequest,
   PeriodChangeResult,
-} from '../../domain/currency.ts'
-import { createProviderUnavailableError } from '../../domain/errors.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
+import { createProviderUnavailableError } from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
 
 export type GetPeriodChange = (
   input: PeriodChangeRequest,

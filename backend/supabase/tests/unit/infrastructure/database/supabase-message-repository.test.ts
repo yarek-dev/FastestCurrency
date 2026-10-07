@@ -1,7 +1,7 @@
 import { deepStrictEqual, rejects } from 'node:assert/strict'
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
-import { createSupabaseMessageRepository } from '../../../../functions/telegram-webhook/infrastructure/database/supabase-message-repository.ts'
+import { createSupabaseMessageRepository } from '@backend/supabase/functions/telegram-webhook/infrastructure/database/supabase-message-repository.ts'
 
 Deno.test('sends a Telegram message to the transactional RPC', async () => {
   let receivedName: string | undefined

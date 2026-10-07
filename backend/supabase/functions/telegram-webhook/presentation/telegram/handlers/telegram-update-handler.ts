@@ -1,8 +1,8 @@
-import type { ConvertCurrency } from '../../../application/use-cases/convert-currency.ts'
-import type { GetPeriodChange } from '../../../application/use-cases/get-period-change.ts'
+import type { ConvertCurrency } from '@backend/supabase/functions/telegram-webhook/application/use-cases/convert-currency.ts'
+import type { GetPeriodChange } from '@backend/supabase/functions/telegram-webhook/application/use-cases/get-period-change.ts'
 import { createTelegramCallbackQueryHandler } from './telegram-callback-query-handler.ts'
 import { createTelegramMessageHandler } from './telegram-message-handler.ts'
-import type { TelegramUpdate, TelegramWebhookAction } from '../telegram-types.ts'
+import type { TelegramUpdate, TelegramWebhookAction } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
 
 export type HandleTelegramUpdate = (
   update: TelegramUpdate,

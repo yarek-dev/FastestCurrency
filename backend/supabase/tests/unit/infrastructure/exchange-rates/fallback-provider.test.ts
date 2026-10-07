@@ -5,16 +5,16 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import type { GetExchangeRate } from '../../../../functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
+import type { GetExchangeRate } from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
 import {
   createProviderUnavailableError,
   createUnsupportedCurrencyError,
   isAllProvidersFailedError,
-} from '../../../../functions/telegram-webhook/domain/errors.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
 import {
   createExchangeRatePairProvider,
   createFallbackProvider,
-} from '../../../../functions/telegram-webhook/infrastructure/exchange-rates/fallback-provider.ts'
+} from '@backend/supabase/functions/telegram-webhook/infrastructure/exchange-rates/fallback-provider.ts'
 
 const current = {
   base: 'EUR', quote: 'USD', rate: 1.1, provider: 'currency-beacon' as const,

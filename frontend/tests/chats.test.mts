@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { compareMessages, toChats, type ClientRecord, type MessageRecord } from '../src/modules/chats/api/chats.ts'
+import { compareMessages, toChats, type ClientRecord, type MessageRecord } from '@frontend/src/modules/chats/api/chats.ts'
 
 const client: ClientRecord = {
   id: 1, user_telegram_id: '123', first_name: 'Анна', last_name: null,

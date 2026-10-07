@@ -4,8 +4,8 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import { isUnsupportedCurrencyError } from '../../../../functions/telegram-webhook/domain/errors.ts'
-import { createCurrencyBeaconProvider } from '../../../../functions/telegram-webhook/infrastructure/currency-beacon/currency-beacon-provider.ts'
+import { isUnsupportedCurrencyError } from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
+import { createCurrencyBeaconProvider } from '@backend/supabase/functions/telegram-webhook/infrastructure/currency-beacon/currency-beacon-provider.ts'
 
 function jsonResponse(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {

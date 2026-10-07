@@ -3,7 +3,7 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import { createFrankfurterProvider } from '../../../../functions/telegram-webhook/infrastructure/frankfurter/frankfurter-provider.ts'
+import { createFrankfurterProvider } from '@backend/supabase/functions/telegram-webhook/infrastructure/frankfurter/frankfurter-provider.ts'
 
 Deno.test('uses the dated v1 endpoint for a historical rate', async () => {
   const originalFetch = globalThis.fetch

@@ -4,8 +4,8 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import type { GetExchangeRatePair } from '../../../functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
-import { createConvertCurrency } from '../../../functions/telegram-webhook/application/use-cases/convert-currency.ts'
+import type { GetExchangeRatePair } from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
+import { createConvertCurrency } from '@backend/supabase/functions/telegram-webhook/application/use-cases/convert-currency.ts'
 
 Deno.test('converts and compares with the previous UTC day', async () => {
   let receivedArguments: Parameters<GetExchangeRatePair> | undefined

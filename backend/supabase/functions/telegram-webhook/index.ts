@@ -1,5 +1,5 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
-import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
+import { createSupabaseAdminClient } from '@backend/supabase/functions/_shared/supabase-admin.ts'
 import { createProcessTelegramUpdate } from './application/use-cases/process-telegram-update.ts'
 import { createConvertCurrency } from './application/use-cases/convert-currency.ts'
 import { createGetPeriodChange } from './application/use-cases/get-period-change.ts'

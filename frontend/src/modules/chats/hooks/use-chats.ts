@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import useSWR from "swr";
-import { type ClientRecord, clientsKey, loadClients, toChats } from "../api/chats";
+import { type ClientRecord, clientsKey, loadClients, toChats } from "@frontend/src/modules/chats/api/chats";
 import { useChatsRealtime } from "./use-chats-realtime";
 import { useMessages } from "./use-messages";
 

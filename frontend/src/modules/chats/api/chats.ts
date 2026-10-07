@@ -1,4 +1,4 @@
-﻿import type { Chat, Message } from "../types/chats";
+﻿import type { Chat, Message } from "@frontend/src/modules/chats/types/chats";
 
 export interface ClientRecord {
     id: number | string;

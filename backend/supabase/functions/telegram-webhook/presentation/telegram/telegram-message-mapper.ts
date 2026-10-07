@@ -1,4 +1,4 @@
-import type { MessageRecord } from '../../application/ports/message-repository.ts'
+import type { MessageRecord } from '@backend/supabase/functions/telegram-webhook/application/ports/message-repository.ts'
 import type {
   TelegramUpdate,
   TelegramUser,

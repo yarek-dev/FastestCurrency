@@ -3,15 +3,15 @@ import {
   strictEqual,
 } from 'node:assert/strict'
 
-import type { ConvertCurrency } from '../../../functions/telegram-webhook/application/use-cases/convert-currency.ts'
-import type { GetPeriodChange } from '../../../functions/telegram-webhook/application/use-cases/get-period-change.ts'
+import type { ConvertCurrency } from '@backend/supabase/functions/telegram-webhook/application/use-cases/convert-currency.ts'
+import type { GetPeriodChange } from '@backend/supabase/functions/telegram-webhook/application/use-cases/get-period-change.ts'
 import type {
   PeriodChangeRequest,
   PeriodChangeResult,
-} from '../../../functions/telegram-webhook/domain/currency.ts'
-import { createTelegramUpdateHandler } from '../../../functions/telegram-webhook/presentation/telegram/handlers/telegram-update-handler.ts'
-import { formatPeriodChangeResult } from '../../../functions/telegram-webhook/presentation/telegram/messages/telegram-result-formatter.ts'
-import type { TelegramUpdate } from '../../../functions/telegram-webhook/presentation/telegram/telegram-types.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
+import { createTelegramUpdateHandler } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/handlers/telegram-update-handler.ts'
+import { formatPeriodChangeResult } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-result-formatter.ts'
+import type { TelegramUpdate } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
 
 const unusedConvertCurrency: ConvertCurrency = () => Promise.reject(
   new Error('should not be called'),

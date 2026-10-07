@@ -1,12 +1,12 @@
 import type {
   GetExchangeRate,
   GetExchangeRatePair,
-} from '../../application/ports/exchange-rate-provider.ts'
+} from '@backend/supabase/functions/telegram-webhook/application/ports/exchange-rate-provider.ts'
 import {
   createAllProvidersFailedError,
   isUnsupportedCurrencyError,
-} from '../../domain/errors.ts'
-import { toError } from '../../shared/errors.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
+import { toError } from '@backend/supabase/functions/telegram-webhook/shared/errors.ts'
 
 interface FallbackProviderOptions {
   primary: GetExchangeRate

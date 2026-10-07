@@ -1,4 +1,4 @@
-import type { ParseErrorReason } from "../input/telegram-input.ts"
+import type { ParseErrorReason } from "@backend/supabase/functions/telegram-webhook/presentation/telegram/input/telegram-input.ts"
 
 const HELP_MESSAGE = `Привет! 👋 Я помогу узнать курс валют и криптовалют, пересчитать сумму и посмотреть, как изменился курс.
 

@@ -6,7 +6,7 @@ import {
 import type {
   ConversionResult,
   PeriodChangeResult,
-} from '../../../functions/telegram-webhook/domain/currency.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
 import {
   formatConversionResult,
   formatFallbackUnavailable,
@@ -16,7 +16,7 @@ import {
   formatServiceUnavailable,
   formatStartMessage,
   formatUnsupportedCurrency,
-} from '../../../functions/telegram-webhook/presentation/telegram/messages/telegram-message-formatter.ts'
+} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-message-formatter.ts'
 
 function result(overrides: Partial<ConversionResult> = {}): ConversionResult {
   return {

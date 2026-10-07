@@ -1,7 +1,7 @@
 import type {
   MessageRecord,
   MessageRepository,
-} from '../ports/message-repository.ts'
+} from '@backend/supabase/functions/telegram-webhook/application/ports/message-repository.ts'
 
 interface ProcessTelegramUpdateOptions<TUpdate, TAction> {
   messageRepository: MessageRepository

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Avatar, AvatarFallback } from "../../../../../components/ui/avatar";
-import { Badge } from "../../../../../components/ui/badge";
-import { Button } from "../../../../../components/ui/button";
-import { Input } from "../../../../../components/ui/input";
-import type { Chat } from "../../../types/chats";
+import { Avatar, AvatarFallback } from "@frontend/src/components/ui/avatar";
+import { Badge } from "@frontend/src/components/ui/badge";
+import { Button } from "@frontend/src/components/ui/button";
+import { Input } from "@frontend/src/components/ui/input";
+import type { Chat } from "@frontend/src/modules/chats/types/chats";
 import styles from "./chat-list.module.css";
 
 interface ChatListProps {

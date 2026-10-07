@@ -1,13 +1,13 @@
-import type { GetPeriodChange } from '../../../application/use-cases/get-period-change.ts'
-import { isUnsupportedCurrencyError } from '../../../domain/errors.ts'
-import { createSendMessageAction } from '../telegram-actions.ts'
-import { parsePeriodCallbackData } from '../input/telegram-callback-data.ts'
-import { formatPeriodChangeResult } from '../messages/telegram-result-formatter.ts'
+import type { GetPeriodChange } from '@backend/supabase/functions/telegram-webhook/application/use-cases/get-period-change.ts'
+import { isUnsupportedCurrencyError } from '@backend/supabase/functions/telegram-webhook/domain/errors.ts'
+import { createSendMessageAction } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-actions.ts'
+import { parsePeriodCallbackData } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/input/telegram-callback-data.ts'
+import { formatPeriodChangeResult } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-result-formatter.ts'
 import {
   formatServiceUnavailable,
   formatUnsupportedCurrency,
-} from '../messages/telegram-static-messages.ts'
-import type { TelegramUpdate, TelegramWebhookAction } from '../telegram-types.ts'
+} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/messages/telegram-static-messages.ts'
+import type { TelegramUpdate, TelegramWebhookAction } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
 
 export type HandleTelegramCallbackQuery = (
   update: TelegramUpdate,

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
-import type { MessageRepository } from '../../application/ports/message-repository.ts'
+import type { MessageRepository } from '@backend/supabase/functions/telegram-webhook/application/ports/message-repository.ts'
 
 export function createSupabaseMessageRepository(
   supabase: SupabaseClient,

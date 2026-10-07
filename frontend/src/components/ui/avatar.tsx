@@ -4,7 +4,7 @@
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
-import { cn } from "../../lib/utils"
+import { cn } from "@frontend/src/lib/utils"
 import styles from "./ui.module.css"
 
 const Avatar = React.forwardRef<

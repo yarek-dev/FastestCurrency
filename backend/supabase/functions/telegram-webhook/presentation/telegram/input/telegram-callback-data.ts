@@ -3,8 +3,8 @@ import type {
   ConversionResult,
   CurrencyProviderName,
   PeriodChangeRequest,
-} from '../../../domain/currency.ts'
-import type { TelegramInlineKeyboardMarkup } from '../telegram-types.ts'
+} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
+import type { TelegramInlineKeyboardMarkup } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
 
 export const CHANGE_PERIODS: ChangePeriodDays[] = [3, 7, 14, 30]
 

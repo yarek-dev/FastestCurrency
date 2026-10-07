@@ -10,7 +10,7 @@ import {
     type MessagePage,
     type MessageRecord,
     toMessage,
-} from "../api/chats";
+} from "@frontend/src/modules/chats/api/chats";
 
 export function useMessages(
     clientId: string | undefined,

@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
-import { Alert, AlertDescription } from "../../../../components/ui/alert";
-import { Badge } from "../../../../components/ui/badge";
-import { Button } from "../../../../components/ui/button";
+import { Alert, AlertDescription } from "@frontend/src/components/ui/alert";
+import { Badge } from "@frontend/src/components/ui/badge";
+import { Button } from "@frontend/src/components/ui/button";
 import { ChatList } from "./components/chat-list";
 import { Conversation } from "./components/conversation";
-import { useChats } from "../../hooks/use-chats";
+import { useChats } from "@frontend/src/modules/chats/hooks/use-chats";
 import styles from "./chats-page.module.css";
-import type { ConversationPosition } from "../../hooks/use-conversation-scroll";
+import type { ConversationPosition } from "@frontend/src/modules/chats/hooks/use-conversation-scroll";
 
 export function ChatsPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
