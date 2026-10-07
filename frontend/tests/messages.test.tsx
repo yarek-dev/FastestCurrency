@@ -142,6 +142,28 @@ describe('cursor history with SWR', () => {
 })
 
 describe('realtime and reconnect', () => {
+  it('preserves buffered client events and the newest preview while clients are loading', async () => {
+    const pending = deferred<Awaited<ReturnType<typeof loadClients>>>()
+    vi.mocked(loadClients).mockReturnValueOnce(pending.promise)
+    const { result } = renderHook(() => useChats('1'), { wrapper: wrapper() })
+    const callbacks = vi.mocked(subscribeToChats).mock.calls[0][0]
+    act(() => {
+      callbacks.onClient({ id: '1', first_name: 'Новое имя', last_name: null,
+        user_telegram_id: '123', last_message_at: message(102).created_at })
+      callbacks.onMessage(message(102))
+      callbacks.onMessage(message(101))
+    })
+    expect(result.current.chats).toHaveLength(0)
+    await act(async () => pending.resolve([
+      { id: '1', first_name: 'Старое имя', last_name: null, user_telegram_id: '123',
+        last_message_at: '2026-10-05T10:00:00Z', last_message: message(100) },
+    ]))
+    await waitFor(() => expect(result.current.selectedChat?.messages).toHaveLength(22))
+    expect(result.current.chats[0].name).toBe('Новое имя')
+    expect(result.current.chats[0].lastMessage?.id).toBe('102')
+    expect(result.current.chats[0].lastMessage?.createdAt).toBe(message(102).created_at)
+  })
+
   it('keeps preview updates from several events in the same render', async () => {
     const { result } = renderHook(() => useChats('1'), { wrapper: wrapper() })
     await waitFor(() => expect(result.current.chats).toHaveLength(2))
