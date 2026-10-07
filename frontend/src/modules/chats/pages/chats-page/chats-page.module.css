@@ -3,7 +3,7 @@
     height: 100dvh;
     min-height: 540px;
     margin: auto;
-    padding: 0 40px;
+    padding: 0 40px 24px;
     display: flex;
     flex-direction: column;
 }
@@ -42,18 +42,18 @@
     padding-bottom: 4px;
 }
 
-.brandLight {
-    color: var(--muted);
-    font-weight: 400;
+.brandText {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.15;
 }
 
-.statusBadge {
-    font-size: 12px;
+.brandSubtitle {
+    font-size: 11px;
     font-weight: 400;
     color: var(--muted);
-    border: 1px solid #d9e1eb;
-    border-radius: 20px;
-    padding: 5px 12px;
+    letter-spacing: .8px;
 }
 
 .workspace {
@@ -66,14 +66,6 @@
     overflow: hidden;
     background: var(--surface);
     box-shadow: 0 12px 40px #25334706;
-}
-
-.pageFooter {
-    padding: 18px 2px 20px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #96a3b3;
 }
 
 .errorBanner {
@@ -119,10 +111,15 @@
     line-height: 1.6;
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 701px) {
     .page {
-        padding-top: 20px;
-        padding-bottom: 20px;
+        max-width: none;
+        min-height: 0;
+        padding: 0 20px 12px;
+    }
+
+    .appHeader {
+        height: 60px;
     }
 
 }
@@ -182,10 +179,6 @@
 
     .conversationOpen > .conversation {
         display: flex;
-    }
-
-    .pageFooter {
-        display: none;
     }
 
 }

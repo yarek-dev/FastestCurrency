@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@frontend/src/components/ui/avatar";
-import { Badge } from "@frontend/src/components/ui/badge";
 import { Button } from "@frontend/src/components/ui/button";
 import { Input } from "@frontend/src/components/ui/input";
 import type { Chat } from "@frontend/src/modules/chats/types/chats";
@@ -28,13 +27,6 @@ export function ChatList(
 
     return (
         <aside className={`${styles.sidebar} ${className}`} aria-label="Диалоги с клиентами">
-            <div className={styles.sidebarHeading}>
-                <div className={styles.headingLine}>
-                    <h1>Сообщения</h1>
-                    <Badge variant="secondary" className={styles.count}>{chats.length}</Badge>
-                </div>
-                <p>Все ваши диалоги в одном месте</p>
-            </div>
             <label className={styles.search}>
                 <svg
                     width="18"

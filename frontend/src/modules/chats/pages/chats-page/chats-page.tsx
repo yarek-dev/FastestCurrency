@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { Alert, AlertDescription } from "@frontend/src/components/ui/alert";
-import { Badge } from "@frontend/src/components/ui/badge";
 import { Button } from "@frontend/src/components/ui/button";
 import { ChatList } from "./components/chat-list";
 import { Conversation } from "./components/conversation";
@@ -10,7 +9,7 @@ import type { ConversationPosition } from "@frontend/src/modules/chats/hooks/use
 
 export function ChatsPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const { chats, selectedChat, history, loading, error, connection, retryClients } = useChats(selectedId);
+    const { chats, selectedChat, history, loading, error, retryClients } = useChats(selectedId);
     const [conversationOpen, setConversationOpen] = useState(false);
     const positions = useRef(new Map<string, ConversationPosition>());
 
@@ -25,28 +24,16 @@ export function ChatsPage() {
                 <a
                     href="/"
                     className={styles.brand}
-                    aria-label="Fullstack Bot — главная"
+                    aria-label="Fullstack admin panel — главная"
                 >
                     <span className={styles.brandMark} aria-hidden="true">
                         f.
                     </span>
-                    <span>
-                        fullstack<span className={styles.brandLight}>
-                            / inbox
-                        </span>
+                    <span className={styles.brandText}>
+                        <span>fullstack</span>
+                        <span className={styles.brandSubtitle}>admin panel</span>
                     </span>
                 </a>
-                <Badge variant="outline" className={styles.statusBadge}>
-                    {loading
-                        ? "Загрузка…"
-                        : connection === "live"
-                        ? "Обновления онлайн"
-                        : connection === "syncing"
-                        ? "Синхронизация…"
-                        : connection === "connecting"
-                        ? "Подключение…"
-                        : "Нет соединения"}
-                </Badge>
             </header>
             {error && (
                 <Alert variant="destructive" className={styles.errorBanner}>
@@ -106,10 +93,6 @@ export function ChatsPage() {
                         </section>
                     )}
             </main>
-            <footer className={styles.pageFooter}>
-                <span>Меньше переключений. Больше внимания клиентам.</span>
-                <span>Fullstack Bot</span>
-            </footer>
         </div>
     );
 }
