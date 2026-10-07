@@ -38,6 +38,7 @@ export function useConversationScroll({
     const historyRef = useRef<HTMLDivElement>(null);
     const markerRef = useRef<HTMLDivElement>(null);
     const [hasNewMessages, setHasNewMessages] = useState(false);
+    const [isAwayFromBottom, setIsAwayFromBottom] = useState(false);
     const firstId = messages[0]?.id;
     const latestId = messages.at(-1)?.id;
 
@@ -48,6 +49,7 @@ export function useConversationScroll({
             history.scrollHeight - history.scrollTop - history.clientHeight <
                 80;
         const unread = !atBottom && (positions.get(clientId)?.unread ?? false);
+        setIsAwayFromBottom(!atBottom);
         setHasNewMessages(unread);
         positions.set(clientId, {
             scrollTop: history.scrollTop,
@@ -119,15 +121,20 @@ export function useConversationScroll({
     const scrollToLatest = useCallback(() => {
         const history = historyRef.current;
         if (!history) return;
-        history.scrollTop = history.scrollHeight;
-        remember();
-    }, [remember]);
+        history.scrollTo({
+            top: history.scrollHeight,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                ? "instant"
+                : "smooth",
+        });
+    }, []);
 
     return {
         historyRef,
         markerRef,
         onScroll: remember,
         hasNewMessages,
+        showScrollToLatest: messages.length > 0 && isAwayFromBottom,
         scrollToLatest,
     };
 }

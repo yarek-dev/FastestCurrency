@@ -18,7 +18,7 @@ function Harness({ messages, clientId = '1', loading = false }: { messages: Mess
       <div ref={scroll.markerRef} />
       {messages.map(message => <div key={message.id} data-message-id={message.id} />)}
     </div>
-    {scroll.hasNewMessages && <button onClick={scroll.scrollToLatest}>New messages</button>}
+    {scroll.showScrollToLatest && <button onClick={scroll.scrollToLatest}>{scroll.hasNewMessages ? 'New messages' : 'Down'}</button>}
   </>
 }
 
@@ -26,6 +26,14 @@ beforeEach(() => {
   positions.clear()
   height = 1000
   vi.clearAllMocks()
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+  Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+    configurable: true,
+    value: vi.fn(function (this: HTMLElement, options: ScrollToOptions) {
+      this.scrollTop = options.top ?? 0
+      this.dispatchEvent(new Event('scroll'))
+    }),
+  })
   vi.stubGlobal('ResizeObserver', class { observe() {}; disconnect() {} })
   vi.stubGlobal('IntersectionObserver', class {
     constructor(callback: IntersectionObserverCallback, options: IntersectionObserverInit) {
@@ -67,6 +75,22 @@ test('restores the saved reading position when returning to a chat', () => {
   view.rerender(<Harness messages={rows(20)} clientId="2" />)
   view.rerender(<Harness messages={rows(20)} />)
   expect(history.scrollTop).toBe(300)
+  expect(screen.getByRole('button', { name: 'Down' })).toBeTruthy()
+})
+
+test('shows a button when scrolling up without new messages and hides it at the bottom', () => {
+  render(<Harness messages={rows(20)} />)
+  const history = screen.getByTestId('history')
+  expect(screen.queryByRole('button')).toBeNull()
+  act(() => { history.scrollTop = 300; history.dispatchEvent(new Event('scroll')) })
+  expect(screen.getByRole('button', { name: 'Down' })).toBeTruthy()
+  act(() => { history.scrollTop = 800; history.dispatchEvent(new Event('scroll')) })
+  expect(screen.queryByRole('button')).toBeNull()
+  act(() => { history.scrollTop = 300; history.dispatchEvent(new Event('scroll')) })
+  act(() => screen.getByRole('button', { name: 'Down' }).click())
+  expect(history.scrollTo).toHaveBeenCalledWith({ top: height, behavior: 'smooth' })
+  expect(history.scrollTop).toBe(height)
+  expect(screen.queryByRole('button')).toBeNull()
 })
 
 test('follows new messages when already at the bottom', () => {
@@ -98,7 +122,7 @@ test('compensates for the height of older messages prepended above', () => {
   view.rerender(<Harness messages={[...older, ...rows(20)]} />)
   expect(history.scrollTop).toBe(1100)
   expect(positions.get('1')!.scrollTop).toBe(1100)
-  expect(screen.queryByRole('button')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Down' })).toBeTruthy()
   view.rerender(<Harness messages={[...older, ...rows(20)]} />)
   expect(history.scrollTop).toBe(1100)
 })

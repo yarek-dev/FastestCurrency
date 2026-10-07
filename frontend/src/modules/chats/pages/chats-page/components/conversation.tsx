@@ -24,7 +24,7 @@ export function Conversation(
         positions: Map<string, ConversationPosition>;
     },
 ) {
-    const { historyRef, markerRef, onScroll, hasNewMessages, scrollToLatest } = useConversationScroll({
+    const { historyRef, markerRef, onScroll, hasNewMessages, showScrollToLatest, scrollToLatest } = useConversationScroll({
         clientId: chat.id, messages: chat.messages, positions,
         hasMore: history.hasMore, loading: history.loading || history.loadingMore,
         error: history.error, loadMore: history.loadMore,
@@ -99,8 +99,20 @@ export function Conversation(
                     ))}
                 </ol>
             </div>
-            {hasNewMessages && <div className={styles.newMessages}>
-                <Button size="sm" onClick={scrollToLatest}>Новые сообщения ↓</Button>
+            {showScrollToLatest && <div className={styles.newMessages}>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className={styles.scrollToLatest}
+                    onClick={scrollToLatest}
+                    aria-label={hasNewMessages ? "К новым сообщениям" : "К последнему сообщению"}
+                    title={hasNewMessages ? "К новым сообщениям" : "К последнему сообщению"}
+                >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 5v14m-6-6 6 6 6-6" />
+                    </svg>
+                    {hasNewMessages && <span className={styles.unreadDot} aria-hidden="true" />}
+                </Button>
             </div>}
             <footer className={styles.conversationFooter}>
                 <svg
