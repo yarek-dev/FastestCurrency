@@ -6,13 +6,19 @@ title Container diagram for Fullstack Bot
 LAYOUT_LEFT_RIGHT()
 
 Person(user, "Пользователь", "Конвертирует валюты и криптовалюты и выбирает период изменения курса в личном чате Telegram.")
+Person(viewer, "Посетитель веб-интерфейса", "Просматривает историю переписки.")
 
 System_Ext(telegram, "Telegram Bot API", "Доставляет обновления боту и выполняет команду из webhook-ответа.")
 System_Ext(currency_beacon, "CurrencyBeacon API", "Предоставляет текущие и исторические курсы фиатных валют и криптовалют.")
 System_Ext(frankfurter, "Frankfurter API", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
 
 System_Boundary(fullstack_bot, "Fullstack Bot") {
-  Container(edge_function, "telegram-webhook", "Supabase Edge Functions, Deno 2, TypeScript", "Принимает сообщения и callback query, получает курсы и возвращает пользователю результаты.")
+  Container(frontend, "Frontend", "React, Vite, SWR; GitHub Pages", "Показывает клиентов и страницы истории; объединяет HTTP-данные и Realtime-события.")
+  Container(edge_function, "telegram-webhook", "Supabase Edge Functions, Deno 2, TypeScript", "Принимает сообщения и callback query, получает курсы, сохраняет переписку и возвращает результаты.")
+  Container(inbox_api, "clients / messages", "Supabase Edge Functions, Deno 2", "Возвращает список клиентов и страницы истории через серверные RPC.")
+  Container(profile, "profile", "Supabase Edge Functions, Deno 2", "Учебный endpoint профиля.")
+  ContainerDb(database, "Database", "Supabase PostgreSQL", "Клиенты, сообщения, RPC, индексы и RLS.")
+  Container(realtime, "Realtime", "Supabase Realtime", "Передаёт изменения таблиц браузеру с проверкой прав RLS.")
 }
 
 Rel(user, edge_function, "Запрашивает конвертацию, выбирает период и получает ответы", "Личный чат Telegram")
@@ -20,6 +26,12 @@ Rel(telegram, edge_function, "Передаёт message или callback_query; п
 Rel(edge_function, telegram, "Подтверждает нажатие кнопки", "answerCallbackQuery, HTTPS/JSON")
 Rel(edge_function, currency_beacon, "Запрашивает текущие и исторические курсы", "HTTPS/JSON, Bearer token")
 Rel(edge_function, frankfurter, "Запрашивает справочные курсы фиатных валют", "HTTPS/JSON")
+Rel(viewer, frontend, "Просматривает переписку", "HTTPS")
+Rel(frontend, inbox_api, "Загружает клиентов и страницы сообщений", "HTTPS/JSON")
+Rel(edge_function, database, "Сохраняет входящие сообщения и ответы бота", "Supabase RPC, service role")
+Rel(inbox_api, database, "Читает клиентов и страницы истории", "Supabase RPC, service role")
+Rel(realtime, database, "Получает изменения таблиц", "PostgreSQL replication")
+Rel(frontend, realtime, "Подписывается на изменения клиентов и сообщений", "WebSocket, публичный ключ, RLS")
 
 SHOW_LEGEND()
 @enduml

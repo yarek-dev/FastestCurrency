@@ -417,7 +417,7 @@ enabled = true
 [functions.telegram-webhook]
 enabled = true
 verify_jwt = false
-import_map = "./functions/telegram-webhook/deno.json"
+import_map = "./functions/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/telegram-webhook/index.ts"
@@ -428,17 +428,17 @@ entrypoint = "./functions/telegram-webhook/index.ts"
 [functions.profile]
 enabled = true
 verify_jwt = false
-import_map = "./functions/telegram-webhook/deno.json"
+import_map = "./functions/deno.json"
 entrypoint = "./functions/profile/index.ts"
 
 [functions.clients]
 enabled = true
 verify_jwt = false
-import_map = "./functions/telegram-webhook/deno.json"
+import_map = "./functions/deno.json"
 entrypoint = "./functions/clients/index.ts"
 
 [functions.messages]
 enabled = true
 verify_jwt = false
-import_map = "./functions/telegram-webhook/deno.json"
+import_map = "./functions/deno.json"
 entrypoint = "./functions/messages/index.ts"

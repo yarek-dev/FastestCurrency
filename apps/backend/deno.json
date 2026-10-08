@@ -1,0 +1,5 @@
+{
+  "importMap": "./supabase/functions/deno.json",
+  "nodeModulesDir": "none",
+  "lock": "./supabase/functions/deno.lock"
+}

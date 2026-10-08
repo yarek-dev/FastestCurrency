@@ -8,9 +8,12 @@ LAYOUT_TOP_DOWN()
 System_Ext(telegram, "Telegram Bot API", "Доставляет сообщения и callback query, принимает webhook-ответ и подтверждение callback.")
 System_Ext(currency_beacon, "CurrencyBeacon API", "Предоставляет текущие и исторические курсы фиатных валют и криптовалют.")
 System_Ext(frankfurter, "Frankfurter API", "Предоставляет текущие и исторические справочные курсы фиатных валют.")
+ContainerDb(database, "Database", "Supabase PostgreSQL", "Сохраняет клиентов и историю сообщений.")
 
 Container_Boundary(edge_function, "telegram-webhook Edge Function") {
   Component(http_interface, "HTTP Interface / Composition Root", "Deno Fetch API", "Проверяет метод, webhook secret и JSON; собирает зависимости и возвращает webhook action.")
+  Component(process_update, "Process Telegram Update", "TypeScript", "Сохраняет входящее сообщение, вызывает обработчик и сохраняет ответ бота.")
+  Component(message_repository, "Message Repository", "TypeScript, Supabase client", "Реализует порт сохранения сообщений через RPC.")
   Component(update_router, "Telegram Update Router", "TypeScript", "Выбирает обработчик сообщения или callback query.")
   Component(message_handler, "Message Handler", "TypeScript", "Обрабатывает команды и конвертацию; формирует ответ и кнопки периода.")
   Component(callback_handler, "Callback Query Handler", "TypeScript", "Читает callback data и формирует отдельный ответ за период.")
@@ -23,7 +26,10 @@ Container_Boundary(edge_function, "telegram-webhook Edge Function") {
 }
 
 Rel(telegram, http_interface, "Передаёт message или callback_query; получает sendMessage в ответе", "HTTPS/JSON")
-Rel(http_interface, update_router, "Передаёт update; получает webhook action", "HandleTelegramUpdate")
+Rel(http_interface, process_update, "Передаёт update; получает webhook action", "ProcessTelegramUpdate")
+Rel(process_update, update_router, "Обрабатывает update", "HandleTelegramUpdate")
+Rel(process_update, message_repository, "Сохраняет входящее сообщение и ответ", "MessageRepository")
+Rel(message_repository, database, "Записывает клиента и сообщение", "Supabase RPC, service role")
 Rel(update_router, message_handler, "Передаёт message", "HandleTelegramMessage")
 Rel(update_router, callback_handler, "Передаёт callback_query", "HandleTelegramCallbackQuery")
 Rel(message_handler, convert_currency, "Передаёт сумму и валютную пару", "ConvertCurrency")

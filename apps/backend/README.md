@@ -23,16 +23,27 @@ Telegram-бот работает как Supabase Edge Function. Он прини�
 ```text
 supabase/
 ├── config.toml
+├── functions/deno.json           # общий import map всех Edge Functions
+├── functions/deno.lock           # общие зафиксированные Deno-зависимости
+├── functions/_shared/           # CORS и серверный Supabase-клиент
+├── functions/clients/           # список клиентов и превью сообщений
+├── functions/messages/          # история и курсорная пагинация
+├── functions/profile/           # учебный endpoint профиля
 ├── functions/telegram-webhook/
 │   ├── index.ts                 # composition root и HTTP-адаптер
 │   ├── domain/                  # модели валют и доменные ошибки
 │   ├── application/             # сценарии и порты
 │   ├── infrastructure/          # провайдеры курсов и Telegram Bot API
 │   └── presentation/            # разбор и обработка Telegram update
-└── tests/unit/                  # Deno unit-тесты
+├── migrations/                  # PostgreSQL, RPC и Realtime/RLS
+└── tests/
+    ├── unit/                    # Deno unit-тесты
+    └── database/                # SQL-тесты
 
 scripts/
 └── set-telegram-webhook.ts      # регистрация webhook в Telegram
+
+deno.json                       # локальные проверки и скрипты, общий import map
 ```
 
 Проект сохраняет чистую архитектуру: зависимости направлены от внешних адаптеров к application/domain, а конкретные реализации связываются в `index.ts`.
@@ -57,12 +68,12 @@ scripts/
 
 ## Настройка
 
-Команды ниже выполняются из папки backend/.
+Команды ниже выполняются из папки apps/backend/.
 
-Установите зависимости:
+Установите зависимости из корня монорепозитория:
 
 ```powershell
-pnpm install
+pnpm --dir ../.. install
 ```
 
 Создайте `.env` из примера и заполните значения:
@@ -130,7 +141,7 @@ Telegram отправляет `POST` на URL Edge Function вместе с се
 
 ## Архитектура
 
-C4-диаграммы и подробное описание слоёв находятся в [`docs/architecture`](../docs/architecture/README.md).
+C4-диаграммы и подробное описание слоёв находятся в [`docs/architecture`](../../docs/architecture/README.md).
 
 ## История чатов
 

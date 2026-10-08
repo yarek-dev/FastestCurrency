@@ -1,5 +1,0 @@
-{
-  "importMap": "./supabase/functions/telegram-webhook/deno.json",
-  "nodeModulesDir": "none",
-  "lock": "./supabase/functions/telegram-webhook/deno.lock"
-}

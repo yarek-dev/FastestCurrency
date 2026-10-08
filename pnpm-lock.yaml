@@ -8,13 +8,13 @@ importers:
 
   .: {}
 
-  backend:
+  apps/backend:
     devDependencies:
       supabase:
         specifier: 2.117.0
         version: 2.117.0
 
-  frontend:
+  apps/frontend:
     dependencies:
       '@radix-ui/react-avatar':
         specifier: 1.2.6
