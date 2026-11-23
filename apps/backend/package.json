@@ -5,8 +5,9 @@
   "description": "Supabase Edge Functions, database migrations and Telegram bot",
   "scripts": {
     "knowledge:import": "deno run --allow-read --allow-run=docker scripts/import-knowledge.ts",
+    "knowledge:index": "deno run --env-file=.env --allow-env=GEMINI_API_KEY,KNOWLEDGE_SUPABASE_URL,KNOWLEDGE_SUPABASE_SERVICE_ROLE_KEY --allow-net scripts/index-knowledge.ts",
     "telegram:webhook:set": "deno run --env-file=.env --allow-env=TELEGRAM_BOT_TOKEN,TELEGRAM_WEBHOOK_SECRET,TELEGRAM_WEBHOOK_URL --allow-net=api.telegram.org scripts/set-telegram-webhook.ts",
-    "typecheck": "deno check --config deno.json supabase/functions/telegram-webhook/index.ts supabase/functions/clients/index.ts supabase/functions/messages/index.ts supabase/functions/admin-auth/index.ts supabase/functions/profile/index.ts scripts/set-telegram-webhook.ts scripts/import-knowledge.ts",
+    "typecheck": "deno check --config deno.json supabase/functions/telegram-webhook/index.ts supabase/functions/clients/index.ts supabase/functions/messages/index.ts supabase/functions/admin-auth/index.ts supabase/functions/profile/index.ts scripts/set-telegram-webhook.ts scripts/import-knowledge.ts scripts/index-knowledge.ts",
     "test": "deno test --config deno.json supabase/tests/unit",
     "test:watch": "deno test --watch --config deno.json supabase/tests/unit",
     "test:db": "supabase test db",

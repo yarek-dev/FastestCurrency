@@ -6,8 +6,8 @@ title Component diagram for Fullstack Bot — telegram-webhook
 LAYOUT_TOP_DOWN()
 
 System_Ext(telegram, "Telegram Bot API", "Доставляет сообщения и принимает webhook-ответ.")
-System_Ext(gemini, "Gemini API", "Выделяет ключевые слова и формулирует ответы.")
-ContainerDb(database, "Database", "Supabase PostgreSQL", "Хранит переписку и базу знаний.")
+System_Ext(gemini, "Gemini API", "Создаёт эмбеддинги и формулирует ответы.")
+ContainerDb(database, "Database", "Supabase PostgreSQL", "Хранит переписку, базу знаний и векторы.")
 
 Container_Boundary(edge_function, "telegram-webhook Edge Function") {
   Component(http_interface, "HTTP Interface / Composition Root", "Deno Fetch API", "Проверяет метод, webhook secret и JSON; собирает зависимости и возвращает webhook action.")
@@ -15,7 +15,7 @@ Container_Boundary(edge_function, "telegram-webhook Edge Function") {
   Component(message_repository, "Message Repository", "TypeScript, Supabase client", "Реализует порт сохранения сообщений через RPC.")
   Component(message_handler, "Knowledge Handler", "TypeScript", "Принимает вопросы из личных чатов и формирует webhook action.")
   Component(knowledge_answer, "Answer Knowledge Question", "TypeScript", "Получает подходящие записи и формулирует ответ по ним.")
-  Component(gemini_adapter, "Gemini Adapter", "TypeScript, Fetch API", "Получает ключевые слова и генерирует ответ.")
+  Component(gemini_adapter, "Gemini Adapters", "TypeScript, Fetch API", "Векторизуют вопрос и генерируют ответ.")
 }
 
 Rel(telegram, http_interface, "Передаёт сообщение и получает sendMessage в ответе", "HTTPS/JSON")
@@ -24,9 +24,9 @@ Rel(process_update, message_handler, "Обрабатывает сообщени�
 Rel(process_update, message_repository, "Сохраняет входящее сообщение и ответ", "MessageRepository")
 Rel(message_repository, database, "Записывает клиента и сообщение", "Supabase RPC, service role")
 Rel(message_handler, knowledge_answer, "Передаёт вопрос")
-Rel(knowledge_answer, database, "Получает тарифы и фрагменты через полнотекстовый поиск", "Supabase RPC, service role")
-Rel(knowledge_answer, gemini_adapter, "Получает ключевые слова и формирует ответ по результатам")
-Rel(gemini_adapter, gemini, "Запрашивает ключевые слова или текст ответа", "HTTPS/JSON")
+Rel(knowledge_answer, database, "Получает тарифы и фрагменты через векторный поиск", "Supabase RPC, service role")
+Rel(knowledge_answer, gemini_adapter, "Использует эмбеддинг вопроса и формирует ответ по результатам")
+Rel(gemini_adapter, gemini, "Запрашивает эмбеддинг или текст ответа", "HTTPS/JSON")
 
 SHOW_LEGEND()
 @enduml

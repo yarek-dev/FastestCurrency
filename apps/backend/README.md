@@ -1,6 +1,6 @@
 # Fullstack Bot — Telegram-справочник платных услуг
 
-Telegram-бот работает как Supabase Edge Function. Он ищет сведения о платных услугах по базе знаний и возвращает сформированный Gemini ответ в webhook reply.
+Telegram-бот работает как Supabase Edge Function. Он ищет сведения о платных услугах через pgvector и возвращает сформированный Gemini ответ в webhook reply.
 
 ## Возможности
 
@@ -38,6 +38,7 @@ supabase/
 
 scripts/
 ├── import-knowledge.ts         # загрузка выгрузки в локальную базу
+├── index-knowledge.ts          # индексация базы через Gemini
 └── set-telegram-webhook.ts     # регистрация webhook в Telegram
 
 deno.json                       # локальные проверки и скрипты, общий import map
@@ -60,7 +61,11 @@ deno.json                       # локальные проверки и скр�
 
 ## Ответы о платных услугах
 
-Webhook получает ключевые слова вопроса от Gemini и вызывает серверную RPC `search_knowledge`. PostgreSQL выбирает тарифы и фрагменты через полнотекстовый поиск. Gemini формулирует ответ по найденным данным. Пустая выдача приводит к просьбе уточнить вопрос, а сбой Gemini — к сообщению о временной недоступности. Менеджер может перехватить диалог до или во время обработки.
+Webhook векторизует исходный вопрос через `gemini-embedding-2` и вызывает серверную RPC `search_knowledge_vector`. PostgreSQL выбирает тарифы и фрагменты по косинусному расстоянию через pgvector. Gemini формулирует ответ по найденным данным. Пустая выдача приводит к просьбе уточнить вопрос, а сбой Gemini — к сообщению о временной недоступности. Менеджер может перехватить диалог до или во время обработки.
+
+После применения миграций и после импорта или редактирования справочника запустите `pnpm knowledge:index` из корня. Скрипт пакетно сохраняет недостающие 768-мерные векторы. Одинаковые описания услуг используют один вектор. Если текст меняется, старый вектор сразу перестаёт участвовать в поиске. Повторный запуск продолжает с незавершённых записей.
+
+Для индексатора в `apps/backend/.env` укажите `KNOWLEDGE_SUPABASE_URL` и `KNOWLEDGE_SUPABASE_SERVICE_ROLE_KEY` выбранного проекта. Локальные значения доступны в `pnpm supabase status`. Скрипт пишет в указанный проект, поэтому сверяйте URL перед запуском.
 
 Для локальной проверки примените миграции, загрузите базу знаний и запустите `pnpm supabase functions serve telegram-webhook --env-file .env` из корня. Путь `.env` относится к `apps/backend`, где выполняется команда CLI.
 
@@ -71,7 +76,7 @@ Webhook получает ключевые слова вопроса от Gemini 
 | `TELEGRAM_BOT_TOKEN` | Edge Function `messages` и локальный скрипт | Ручная отправка сообщений и регистрация webhook. |
 | `TELEGRAM_WEBHOOK_SECRET` | Edge Function и локальный скрипт | Проверка заголовка `X-Telegram-Bot-Api-Secret-Token`. |
 | `TELEGRAM_WEBHOOK_URL` | Локальный скрипт | URL развёрнутой Edge Function. |
-| `GEMINI_API_KEY` | Edge Function | Ключ Gemini Developer API для поиска и генерации ответов. |
+| `GEMINI_API_KEY` | Edge Function и индексатор | Ключ Gemini Developer API для эмбеддингов и генерации ответов. |
 | `GEMINI_MODEL` | Edge Function | Необязательный идентификатор модели Gemini. По умолчанию `gemini-3.5-flash-lite`. |
 
 Локальные значения хранятся в `.env`, который исключён из Git. Для Edge Function секреты задаются отдельно в Supabase.

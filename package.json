@@ -13,6 +13,8 @@
     "test:watch": "pnpm -r --parallel run test:watch",
     "test:db": "pnpm --filter @fullstack-bot/backend test:db",
     "knowledge:import": "pnpm --filter @fullstack-bot/backend knowledge:import",
+    "knowledge:index": "pnpm --filter @fullstack-bot/backend knowledge:index",
+    "knowledge:index": "pnpm --filter @fullstack-bot/backend knowledge:index",
     "deploy:backend": "pnpm --filter @fullstack-bot/backend deploy",
     "supabase": "pnpm --filter @fullstack-bot/backend exec supabase",
     "telegram:webhook:set": "pnpm --filter @fullstack-bot/backend telegram:webhook:set"

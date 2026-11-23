@@ -1,5 +1,5 @@
 begin;
-select plan(21);
+select plan(14);
 
 set local role service_role;
 insert into public.knowledge_sources (url, title, kind) values
@@ -30,24 +30,6 @@ select is((select array_agg(t.amount order by t.amount) from public.knowledge_ta
     join public.knowledge_sources s on t.source_id = s.id
     where s.url in ('https://example.test/knowledge-a', 'https://example.test/knowledge-b')),
     array[1400.00,1550.00]::numeric[], 'the same service can have different prices at different sources');
-select is((select count(*)::int from public.knowledge_chunks
-    where body = 'Для записи позвоните в регистратуру.'
-        and search_text @@ plainto_tsquery('pg_catalog.russian', 'регистратура')), 1,
-    'Russian full-text search matches inflected words in chunks');
-select is((select count(*)::int from public.knowledge_tariffs
-    where source_key = 'table-1:row-1:price-1' and search_text @@ plainto_tsquery('pg_catalog.russian', 'гинеколог')
-        and source_id in (select id from public.knowledge_sources where url like 'https://example.test/knowledge-%')), 2,
-    'Russian full-text search indexes tariff service names');
-
-select ok(not has_function_privilege('anon', 'public.search_knowledge(text)', 'EXECUTE'), 'anon cannot search');
-select ok(not has_function_privilege('authenticated', 'public.search_knowledge(text)', 'EXECUTE'), 'authenticated cannot search');
-set local role service_role;
-select ok(public.search_knowledge('консультация гинеколога')->'tariffs' @> '[{"amount":"1400.00","price_type":"from","currency":"BYN"},{"amount":"1550.00","price_type":"from","currency":"BYN"}]'::jsonb,
-    'search returns alternative exact tariffs and pricing conditions');
-select ok(public.search_knowledge('регистратура')->'chunks' @> '[{"heading":"Запись к гинекологу"}]'::jsonb, 'search returns reference text');
-select is(public.search_knowledge('неизвестнаяуслугаббб'), '{"tariffs":[],"chunks":[]}'::jsonb, 'missing matches return empty collections');
-reset role;
-
 select throws_ok(
     $$insert into public.knowledge_sources (url, title, kind) values ('https://example.test/knowledge-a', 'Duplicate', 'page')$$,
     '23505', null, 'one row per source URL'

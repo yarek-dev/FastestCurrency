@@ -16,7 +16,7 @@
 
 - React frontend из `apps/frontend/`, размещаемый на GitHub Pages: список клиентов, история сообщений и восстановление пропущенных сообщений после переподключения;
 - Supabase Edge Functions из `apps/backend/supabase/functions/`, выполняемые в Deno: `telegram-webhook` отвечает по базе знаний через Gemini и сохраняет историю, `admin-auth` передаёт операции сессии в Supabase Auth, `clients` возвращает список клиентов с последним сообщением, `messages` возвращает страницы истории, `profile` служит учебным endpoint;
-- PostgreSQL в Supabase: таблицы клиентов, сообщений и базы знаний, серверные RPC, RLS и миграции;
+- PostgreSQL в Supabase: таблицы клиентов, сообщений и базы знаний, серверные RPC, pgvector, RLS и миграции;
 - Supabase Realtime: доставка изменений таблиц в браузер.
 
 Frontend читает первоначальное состояние и страницы истории через HTTP-функции, а изменения получает напрямую через Realtime с пользовательским JWT. Серверные функции проверяют JWT и членство пользователя в `public.inbox_admins`. Политики RLS используют тот же список для проверки доступа к таблицам и Realtime. SWR хранит загруженные данные в памяти браузера до выхода или перезагрузки. Запись сообщений выполняется через service role. Отдельных очереди и серверного кэша нет.
@@ -51,11 +51,12 @@ Frontend читает первоначальное состояние и стр�
 | Message Repository | `infrastructure/database/supabase-message-repository.ts` |
 | Knowledge Handler | `presentation/telegram/handlers/telegram-knowledge-handler.ts` |
 | Answer Knowledge Question | `application/use-cases/answer-knowledge-question.ts` |
+| Gemini Embeddings | `infrastructure/gemini/gemini-embeddings.ts` |
 | Gemini Knowledge Answer | `infrastructure/gemini/gemini-knowledge.ts` |
 
 ## Поиск по базе знаний
 
-Gemini выделяет ключевые слова из вопроса. RPC `search_knowledge` находит подходящие тарифы и фрагменты через полнотекстовый поиск. Затем Gemini формулирует ответ по найденным данным.
+Для исходного вопроса Gemini строит 768-мерный вектор. RPC `search_knowledge_vector` сортирует доступные записи по косинусному расстоянию. Затем Gemini формулирует ответ по подобранным тарифам и фрагментам. Эмбеддинги данных создаёт пакетный скрипт `pnpm knowledge:index`.
 
 ## История переписки
 

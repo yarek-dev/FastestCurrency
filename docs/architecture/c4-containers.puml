@@ -9,7 +9,7 @@ Person(user, "Пользователь", "Спрашивает о платных
 Person(viewer, "Администратор", "Входит в панель и просматривает историю переписки.")
 
 System_Ext(telegram, "Telegram Bot API", "Доставляет обновления боту и выполняет команду из webhook-ответа.")
-System_Ext(gemini, "Gemini API", "Выделяет ключевые слова и формулирует ответы.")
+System_Ext(gemini, "Gemini API", "Создаёт эмбеддинги и формулирует ответы.")
 
 System_Boundary(fullstack_bot, "Fullstack Bot") {
   Container(frontend, "Frontend", "React, Vite, SWR; GitHub Pages", "Показывает клиентов и страницы истории; объединяет HTTP-данные и Realtime-события.")
@@ -18,20 +18,20 @@ System_Boundary(fullstack_bot, "Fullstack Bot") {
   Container(auth, "Auth", "Supabase Auth", "Проверяет пароль и управляет токенами сессии.")
   Container(inbox_api, "clients / messages", "Supabase Edge Functions, Deno 2", "Проверяет доступ и возвращает список клиентов и страницы истории через серверные RPC.")
   Container(profile, "profile", "Supabase Edge Functions, Deno 2", "Учебный endpoint профиля.")
-  ContainerDb(database, "Database", "Supabase PostgreSQL", "Клиенты, сообщения, база знаний и RLS.")
+  ContainerDb(database, "Database", "Supabase PostgreSQL", "Клиенты, сообщения, база знаний, pgvector и RLS.")
   Container(realtime, "Realtime", "Supabase Realtime", "Передаёт изменения таблиц браузеру с проверкой прав RLS.")
 }
 
 Rel(user, edge_function, "Задаёт вопросы о платных услугах и получает ответы", "Личный чат Telegram")
 Rel(telegram, edge_function, "Передаёт сообщение и получает sendMessage в HTTP-ответе", "HTTPS/JSON")
-Rel(edge_function, gemini, "Получает ключевые слова и генерирует ответ", "HTTPS/JSON")
+Rel(edge_function, gemini, "Создаёт вектор вопроса и генерирует ответ", "HTTPS/JSON")
 Rel(viewer, frontend, "Просматривает переписку", "HTTPS")
 Rel(frontend, admin_auth, "Входит, проверяет, обновляет и завершает сессию", "HTTPS/JSON")
 Rel(admin_auth, auth, "Передаёт операции сессии", "HTTP/JSON")
 Rel(admin_auth, database, "Проверяет право администратора", "service role")
 Rel(frontend, inbox_api, "Загружает клиентов и страницы сообщений", "HTTPS/JSON, JWT")
 Rel(inbox_api, auth, "Проверяет пользовательский токен", "HTTP/JSON")
-Rel(edge_function, database, "Ищет сведения по базе знаний и сохраняет переписку", "Supabase RPC, service role")
+Rel(edge_function, database, "Ищет сведения через pgvector и сохраняет переписку", "Supabase RPC, service role")
 Rel(inbox_api, database, "Читает клиентов и страницы истории", "Supabase RPC, service role")
 Rel(realtime, database, "Получает изменения таблиц", "PostgreSQL replication")
 Rel(frontend, realtime, "Подписывается на изменения клиентов и сообщений", "WebSocket, JWT, RLS")

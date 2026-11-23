@@ -3,7 +3,8 @@ import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
 import { createAnswerKnowledgeQuestion } from './application/use-cases/answer-knowledge-question.ts'
 import { createProcessTelegramUpdate } from './application/use-cases/process-telegram-update.ts'
 import { createSupabaseMessageRepository } from './infrastructure/database/supabase-message-repository.ts'
-import { createGeminiKnowledgeLookup } from './infrastructure/gemini/gemini-knowledge.ts'
+import { createGeminiEmbeddings } from './infrastructure/gemini/gemini-embeddings.ts'
+import { createGeminiKnowledgeAnswer } from './infrastructure/gemini/gemini-knowledge.ts'
 import { createTelegramWebhookController } from './presentation/http/telegram-webhook-controller.ts'
 import { createTelegramKnowledgeHandler } from './presentation/telegram/handlers/telegram-knowledge-handler.ts'
 import {
@@ -17,11 +18,15 @@ const geminiApiKey = Deno.env.get('GEMINI_API_KEY')?.trim()
 const geminiModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.5-flash-lite'
 
 const supabase = createSupabaseAdminClient()
-const answerQuestion = supabase && geminiApiKey
+const embeddings = geminiApiKey ? createGeminiEmbeddings(geminiApiKey) : undefined
+const answerQuestion = supabase && geminiApiKey && embeddings
   ? createAnswerKnowledgeQuestion({
-    selectQuery: createGeminiKnowledgeLookup({ apiKey: geminiApiKey, model: geminiModel }),
-    async search(query) {
-      const { data, error } = await supabase.rpc('search_knowledge', { p_query: query })
+    answer: createGeminiKnowledgeAnswer({ apiKey: geminiApiKey, model: geminiModel }),
+    async search(question) {
+      const embedding = await embeddings.embedQuestion(question)
+      const { data, error } = await supabase.rpc('search_knowledge_vector', {
+        p_embedding: JSON.stringify(embedding),
+      })
       if (error) throw error
       return data
     },
