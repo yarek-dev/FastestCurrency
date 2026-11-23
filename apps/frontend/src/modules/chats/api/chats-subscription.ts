@@ -1,8 +1,6 @@
-﻿import {
-    createClient,
-    type REALTIME_SUBSCRIBE_STATES,
-} from "@supabase/supabase-js";
+﻿import type { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import type { ClientRecord, MessageRecord } from "./chats";
+import { getInboxClient } from "@frontend/src/lib/supabase";
 
 interface ChatsSubscriptionCallbacks {
     onClient: (client: ClientRecord) => void;
@@ -14,49 +12,61 @@ interface ChatsSubscriptionCallbacks {
 export function subscribeToChats(
     { onClient, onMessage, onStatus, onError }: ChatsSubscriptionCallbacks,
 ): () => void {
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    if (!url || !key) {
+    const client = getInboxClient();
+    if (!client) {
         onError(
             "Не настроено подключение: нужны URL и публичный ключ Supabase.",
         );
         return () => {};
     }
     let disposed = false;
-    const client = createClient(url, key, {
-        auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
-        },
+    let channel: ReturnType<typeof client.channel> | undefined;
+    void client.auth.getSession().then(async ({ data, error }) => {
+        if (disposed) return;
+        if (error || !data.session) {
+            onError("Сессия недоступна. Войдите, чтобы получать новые сообщения.");
+            return;
+        }
+        await client.realtime.setAuth(data.session.access_token);
+        if (disposed) return;
+        channel = openChatsChannel(client, { onClient, onMessage, onStatus }, () => disposed);
+    }).catch(() => {
+        if (!disposed) onError("Не удалось подключиться к новым сообщениям.");
     });
-    const channel = client.channel("chats")
+    return () => {
+        disposed = true;
+        if (channel) void client.removeChannel(channel);
+    };
+}
+
+function openChatsChannel(
+    client: NonNullable<ReturnType<typeof getInboxClient>>,
+    { onClient, onMessage, onStatus }: Omit<ChatsSubscriptionCallbacks, "onError">,
+    isDisposed: () => boolean,
+) {
+    return client.channel("chats:" + crypto.randomUUID())
         .on<ClientRecord>("postgres_changes", {
             event: "INSERT",
             schema: "public",
             table: "clients",
         }, ({ new: record }) => {
-            if (!disposed) onClient(record);
+            if (!isDisposed()) onClient(record);
         })
         .on<ClientRecord>("postgres_changes", {
             event: "UPDATE",
             schema: "public",
             table: "clients",
         }, ({ new: record }) => {
-            if (!disposed) onClient(record);
+            if (!isDisposed()) onClient(record);
         })
         .on<MessageRecord>("postgres_changes", {
             event: "INSERT",
             schema: "public",
             table: "messages",
         }, ({ new: record }) => {
-            if (!disposed) onMessage(record);
+            if (!isDisposed()) onMessage(record);
         })
         .subscribe((status) => {
-            if (!disposed) onStatus(status);
+            if (!isDisposed()) onStatus(status);
         });
-    return () => {
-        disposed = true;
-        void client.removeChannel(channel);
-    };
 }

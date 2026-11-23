@@ -4,13 +4,13 @@ import {
     createRouter,
     Outlet,
 } from "@tanstack/react-router";
-import { ChatsPage } from "./modules/chats";
+import { AdminPanel } from "./modules/auth/admin-panel";
 
 const rootRoute = createRootRoute({ component: Outlet });
 const chatsRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/",
-    component: ChatsPage,
+    component: AdminPanel,
 });
 
 export const router = createRouter({

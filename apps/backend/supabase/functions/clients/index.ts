@@ -1,5 +1,6 @@
-import { createSupabaseAdminClient } from '@backend/supabase/functions/_shared/supabase-admin.ts'
-import { corsHeaders } from '@backend/supabase/functions/_shared/cors.ts'
+import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+import { authorizeInbox, inboxError } from '../_shared/inbox-access.ts'
 
 const supabase = createSupabaseAdminClient()
 
@@ -16,12 +17,9 @@ export default {
       )
     }
 
-    if (!supabase) {
-      return Response.json(
-        { error: 'Internal Server Error' },
-        { status: 500, headers: corsHeaders },
-      )
-    }
+    if (!supabase) return inboxError(500, corsHeaders)
+    const access = await authorizeInbox(supabase, request)
+    if (access !== 200) return inboxError(access, corsHeaders)
 
     const { data, error } = await supabase.rpc('list_inbox_clients')
 

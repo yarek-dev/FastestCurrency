@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { ThemeSwitch } from "@frontend/src/components/theme-switch/theme-switch";
+import type { ReactNode } from "react";
 import { Alert, AlertDescription } from "@frontend/src/components/ui/alert";
 import { Button } from "@frontend/src/components/ui/button";
 import { ChatList } from "./components/chat-list";
@@ -8,7 +9,7 @@ import { useChats } from "@frontend/src/modules/chats/hooks/use-chats";
 import styles from "./chats-page.module.css";
 import type { ConversationPosition } from "@frontend/src/modules/chats/hooks/use-conversation-scroll";
 
-export function ChatsPage() {
+export function ChatsPage({ headerAction }: { headerAction?: ReactNode }) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const { chats, selectedChat, history, loading, error, retryClients } = useChats(selectedId);
     const [conversationOpen, setConversationOpen] = useState(false);
@@ -23,7 +24,7 @@ export function ChatsPage() {
         <div className={styles.page}>
             <header className={styles.appHeader}>
                 <a
-                    href="/"
+                    href={import.meta.env.BASE_URL}
                     className={styles.brand}
                     aria-label="Fullstack admin panel — главная"
                 >
@@ -35,7 +36,10 @@ export function ChatsPage() {
                         <span className={styles.brandSubtitle}>admin panel</span>
                     </span>
                 </a>
-                <ThemeSwitch />
+                <div className={styles.headerActions}>
+                    <ThemeSwitch />
+                    {headerAction}
+                </div>
             </header>
             {error && (
                 <Alert variant="destructive" className={styles.errorBanner}>

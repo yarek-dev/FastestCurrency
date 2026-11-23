@@ -1,5 +1,7 @@
 ﻿import type { Chat, Message } from "@frontend/src/modules/chats/types/chats";
 
+import { getInboxClient } from "@frontend/src/lib/supabase";
+
 export interface ClientRecord {
     id: number | string;
     user_telegram_id: string;
@@ -46,12 +48,18 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
 
 async function request<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
     const url = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
-    if (!url) throw new Error("Не настроено подключение к перепискам.");
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const client = getInboxClient();
+    if (!url || !key || !client) throw new Error("Не настроено подключение к перепискам.");
+    const { data, error } = await client.auth.getSession();
+    if (error || !data.session) throw new Error("Войдите, чтобы загрузить переписки.");
     const response = await fetch(`${url}/functions/v1/${endpoint}`, {
         signal: signal ?? AbortSignal.timeout(15_000),
+        headers: { apikey: key, Authorization: 'Bearer ' + data.session.access_token },
         cache: "no-store",
     });
     if (!response.ok) {
+        if (response.status === 403) throw new Error("Доступ к перепискам закрыт.");
         throw new Error(
             `Не удалось загрузить переписки (HTTP ${response.status}).`,
         );
