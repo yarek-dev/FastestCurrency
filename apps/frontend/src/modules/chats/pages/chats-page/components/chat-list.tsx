@@ -91,6 +91,8 @@ export function ChatList(
                                                 ? `${
                                                     lastMessage.author === "bot"
                                                         ? "Бот: "
+                                                        : lastMessage.author === "manager"
+                                                        ? "Менеджер: "
                                                         : ""
                                                 }${lastMessage.text}`
                                                 : "Нет загруженных сообщений"}

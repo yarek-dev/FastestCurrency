@@ -9,7 +9,7 @@ import { useChats } from "@frontend/src/modules/chats/hooks/use-chats";
 import styles from "./chats-page.module.css";
 import type { ConversationPosition } from "@frontend/src/modules/chats/hooks/use-conversation-scroll";
 
-export function ChatsPage({ headerAction }: { headerAction?: ReactNode }) {
+export function ChatsPage({ adminUserId, headerAction }: { adminUserId: string; headerAction?: ReactNode }) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const { chats, selectedChat, history, loading, error, retryClients } = useChats(selectedId);
     const [conversationOpen, setConversationOpen] = useState(false);
@@ -70,6 +70,7 @@ export function ChatsPage({ headerAction }: { headerAction?: ReactNode }) {
                         <Conversation
                             className={styles.conversation}
                             chat={selectedChat}
+                            adminUserId={adminUserId}
                             history={history}
                             positions={positions.current}
                             onBack={() => setConversationOpen(false)}

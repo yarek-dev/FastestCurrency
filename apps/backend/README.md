@@ -27,7 +27,7 @@ supabase/
 ├── functions/deno.lock           # общие зафиксированные Deno-зависимости
 ├── functions/_shared/           # CORS и серверный Supabase-клиент
 ├── functions/clients/           # список клиентов и превью сообщений
-├── functions/messages/          # история и курсорная пагинация
+├── functions/messages/          # история, курсорная пагинация и действия менеджера
 ├── functions/profile/           # учебный endpoint профиля
 ├── functions/telegram-webhook/
 │   ├── index.ts                 # composition root и HTTP-адаптер
@@ -59,7 +59,7 @@ deno.json                       # локальные проверки и скр�
 
 | Переменная | Где используется | Назначение |
 | --- | --- | --- |
-| `TELEGRAM_BOT_TOKEN` | Edge Function и локальный скрипт | Подтверждение callback query и регистрация webhook. |
+| `TELEGRAM_BOT_TOKEN` | Edge Functions и локальный скрипт | Подтверждение callback query, ручная отправка сообщений и регистрация webhook. |
 | `TELEGRAM_WEBHOOK_SECRET` | Edge Function и локальный скрипт | Проверка заголовка `X-Telegram-Bot-Api-Secret-Token`. |
 | `TELEGRAM_WEBHOOK_URL` | Локальный скрипт | URL развёрнутой Edge Function. |
 | `CURRENCY_BEACON_API_KEY` | Edge Function | Необязательный ключ CurrencyBeacon. Без него используется Frankfurter. |
@@ -148,6 +148,8 @@ C4-диаграммы и подробное описание слоёв нахо
 Webhook сохраняет сообщения клиента и ответы бота в PostgreSQL. Администратор входит через `admin-auth`, читает список клиентов через `clients`, историю через `messages`, а новые записи получает через Supabase Realtime. HTTP-функции и RLS проверяют запись пользователя в `public.inbox_admins`. Настройка тестовых аккаунтов описана в [корневом README](../../README.md#вход-в-админ-панель).
 
 `GET /functions/v1/clients` возвращает клиентов с `last_message` для превью. `GET /functions/v1/messages?client_id=123` возвращает `{ items, nextCursor }`: последние 20 записей от новых к старым. Для следующей страницы передайте `cursor=<nextCursor>`. Курсор содержит точные `created_at` и `id`; ID возвращаются строками для сохранения bigint. `direction=after` возвращает записи после курсора от старых к новым и используется для восстановления после разрыва соединения. Ответ с `nextCursor: null` означает конец истории. Некорректные параметры возвращают HTTP 400.
+
+`POST /functions/v1/messages` принимает `{ clientId, requestId, action, text? }`. Действия `connect`, `send` и `finish` доступны администраторам, а отправка и завершение разрешены владельцу активного диалога. `requestId` — UUID одного действия. Повтор того же запроса не вызывает повторную отправку в Telegram. База сериализует действия по диалогу, а история и состояние обновляются после подтверждения Telegram. При неизвестном исходе нужно проверить историю перед новой попыткой. В списке клиентов `manager_user_id` содержит ID текущего менеджера, а `manager_kind` в записи сообщения различает ответ (`reply`) и уведомление (`notice`).
 
 Миграция `20261005150000_add_message_cursor_pagination.sql` добавляет индекс истории по клиенту и серверные RPC-функции. Сначала примените миграцию, затем разверните обе функции:
 

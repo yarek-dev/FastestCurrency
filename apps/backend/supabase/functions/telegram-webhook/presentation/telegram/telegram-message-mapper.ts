@@ -51,6 +51,10 @@ function getConversation(
   }
 }
 
+export function getPrivateTelegramUserId(update: TelegramUpdate): string | undefined {
+  return getConversation(update)?.userTelegramId
+}
+
 function toIsoDate(unixSeconds: number | undefined): string {
   if (
     typeof unixSeconds === 'number' &&

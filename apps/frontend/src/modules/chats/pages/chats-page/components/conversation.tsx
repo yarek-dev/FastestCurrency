@@ -6,6 +6,7 @@ import type { Chat } from "@frontend/src/modules/chats/types/chats";
 import styles from "./conversation.module.css";
 import { useConversationScroll, type ConversationPosition } from "@frontend/src/modules/chats/hooks/use-conversation-scroll";
 import type { useMessages } from "@frontend/src/modules/chats/hooks/use-messages";
+import { ConversationManager } from "./conversation-manager";
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
@@ -18,8 +19,8 @@ function messageDate(createdAt: string) {
 }
 
 export function Conversation(
-    { chat, onBack, history, positions, className = "" }: {
-        chat: Chat; onBack: () => void; className?: string;
+    { chat, adminUserId, onBack, history, positions, className = "" }: {
+        chat: Chat; adminUserId: string; onBack: () => void; className?: string;
         history: ReturnType<typeof useMessages>;
         positions: Map<string, ConversationPosition>;
     },
@@ -80,13 +81,14 @@ export function Conversation(
                         <li
                             data-message-id={message.id}
                             className={`${styles.messageRow} ${
-                                message.author === "bot" ? styles.outgoing : ""
+                                message.author === "notice" ? styles.notice
+                                    : message.author !== "client" ? styles.outgoing : ""
                             }`}
                         >
                             <div className={styles.message}>
-                                {message.author === "bot" && (
+                                {(message.author === "bot" || message.author === "manager") && (
                                     <span className={styles.messageAuthor}>
-                                        Fullstack Bot
+                                        {message.author === "manager" ? "Менеджер" : "Fullstack Bot"}
                                     </span>
                                 )}
                                 <p>{message.text}</p>
@@ -114,24 +116,8 @@ export function Conversation(
                     {hasNewMessages && <span className={styles.unreadDot} aria-hidden="true" />}
                 </Button>
             </div>}
-            <footer className={styles.conversationFooter}>
-                <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    aria-hidden="true"
-                >
-                    <rect x="5" y="10" width="14" height="10" rx="3" />
-                    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                </svg>
-                <span>Просмотр переписки</span>
-                <span className={styles.footerDescription}>
-                    Сообщения клиента и ответы бота
-                </span>
-            </footer>
+            <ConversationManager key={chat.id} clientId={chat.id}
+                managerUserId={chat.managerUserId} adminUserId={adminUserId} />
         </section>
     );
 }

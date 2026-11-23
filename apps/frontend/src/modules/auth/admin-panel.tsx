@@ -81,7 +81,7 @@ function AdminSession({ client }: { client: SupabaseClient }) {
   if (userId && status === 'allowed') {
     return (
       <SWRConfig key={userId} value={inboxCache}>
-        <ChatsPage headerAction={
+        <ChatsPage adminUserId={userId} headerAction={
           <>
             {signOutError && <span className={styles.error} role="alert">Не удалось выйти.</span>}
             <Button variant="outline" size="sm" disabled={signingOut} onClick={signOut}>Выйти</Button>

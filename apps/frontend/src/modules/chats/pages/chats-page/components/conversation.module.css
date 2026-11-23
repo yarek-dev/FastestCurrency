@@ -212,8 +212,7 @@
 }
 
 .conversationFooter {
-    display: flex;
-    align-items: center;
+    display: grid;
     gap: 8px;
     background: var(--surface);
     border-top: 1px solid var(--border-soft);
@@ -222,10 +221,38 @@
     color: var(--muted);
 }
 
-.footerDescription {
-    margin-left: auto;
+.managerControls,
+.composer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.composer textarea {
+    flex: 1;
+    min-width: 0;
+    resize: vertical;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    padding: 8px;
+}
+
+.managerError {
+    margin: 0;
+    color: var(--error);
+}
+
+.notice {
+    justify-content: center;
+}
+
+.notice .message {
     color: var(--muted);
-    font-size: 10px;
 }
 
 .backButton {
@@ -249,10 +276,6 @@
 
     .conversationHeader {
         padding-inline: 24px;
-    }
-
-    .footerDescription {
-        display: none;
     }
 }
 

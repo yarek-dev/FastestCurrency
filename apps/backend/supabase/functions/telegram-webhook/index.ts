@@ -14,6 +14,7 @@ import { createAnswerCallbackQuery } from './infrastructure/telegram/telegram-bo
 import { createTelegramWebhookController } from './presentation/http/telegram-webhook-controller.ts'
 import { createTelegramUpdateHandler } from './presentation/telegram/handlers/telegram-update-handler.ts'
 import {
+  getPrivateTelegramUserId,
   toIncomingTelegramMessage,
   toOutgoingTelegramMessage,
 } from './presentation/telegram/telegram-message-mapper.ts'
@@ -50,10 +51,24 @@ const supabase = createSupabaseAdminClient()
 const messageRepository = supabase
   ? createSupabaseMessageRepository(supabase)
   : undefined
-const processTelegramUpdate = telegramBotToken && messageRepository
+const processTelegramUpdate = telegramBotToken && supabase && messageRepository
   ? createProcessTelegramUpdate({
     messageRepository,
     handleUpdate: handleTelegramUpdate,
+    async isManaged(update) {
+      const userId = getPrivateTelegramUserId(update)
+      if (!userId) return false
+      const { data, error } = await supabase.rpc('inbox_manager_is_active', { p_user_telegram_id: userId })
+      if (error) throw error
+      return data === true
+    },
+    async acknowledgeManagedUpdate(update) {
+      if (update.callback_query?.id) {
+        await answerCallbackQuery(update.callback_query.id).catch(() => {
+          console.warn('Failed to acknowledge callback in a managed conversation')
+        })
+      }
+    },
     toIncomingMessage: toIncomingTelegramMessage,
     toOutgoingMessage: toOutgoingTelegramMessage,
   })

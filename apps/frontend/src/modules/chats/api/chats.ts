@@ -1,4 +1,4 @@
-﻿import type { Chat, Message } from "@frontend/src/modules/chats/types/chats";
+import type { Chat, Message } from "@frontend/src/modules/chats/types/chats";
 
 import { getInboxClient } from "@frontend/src/lib/supabase";
 
@@ -8,6 +8,7 @@ export interface ClientRecord {
     first_name: string | null;
     last_name: string | null;
     last_message_at: string;
+    manager_user_id?: string | null;
     last_message?: MessageRecord | null;
 }
 
@@ -17,6 +18,7 @@ export interface MessageRecord {
     created_at: string;
     author: string | null;
     body: string | null;
+    manager_kind?: "reply" | "notice" | null;
 }
 
 export interface MessagePage {
@@ -46,7 +48,15 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
     minute: "2-digit",
 });
 
-async function request<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
+class InboxRequestError extends Error {
+    constructor(readonly status: number, readonly code?: string) {
+        super(status === 403
+            ? "Доступ к перепискам закрыт."
+            : `Не удалось загрузить переписки (HTTP ${status}).`);
+    }
+}
+
+async function request<T>(endpoint: string, signal?: AbortSignal, body?: object): Promise<T> {
     const url = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
     const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const client = getInboxClient();
@@ -55,16 +65,42 @@ async function request<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
     if (error || !data.session) throw new Error("Войдите, чтобы загрузить переписки.");
     const response = await fetch(`${url}/functions/v1/${endpoint}`, {
         signal: signal ?? AbortSignal.timeout(15_000),
-        headers: { apikey: key, Authorization: 'Bearer ' + data.session.access_token },
+        method: body ? "POST" : "GET",
+        headers: {
+            apikey: key,
+            Authorization: 'Bearer ' + data.session.access_token,
+            ...(body && { "Content-Type": "application/json" }),
+        },
+        body: body && JSON.stringify(body),
         cache: "no-store",
     });
     if (!response.ok) {
-        if (response.status === 403) throw new Error("Доступ к перепискам закрыт.");
-        throw new Error(
-            `Не удалось загрузить переписки (HTTP ${response.status}).`,
-        );
+        const payload = body ? await response.json().catch(() => null) : null;
+        throw new InboxRequestError(response.status, payload?.error);
     }
     return response.json();
+}
+
+export const managerReplyLimit = 4096 - "Менеджер\n".length;
+export type ManagerAction = { action: "connect" | "finish" } | { action: "send"; text: string };
+
+export async function runManagerAction(clientId: string, action: ManagerAction) {
+    try {
+        return await request<{ ok: true; message?: MessageRecord }>("messages", undefined, {
+            ...action,
+            clientId,
+            requestId: crypto.randomUUID(),
+        });
+    } catch (error) {
+        if (error instanceof InboxRequestError) {
+            if (error.status === 401 || error.status === 403) throw error;
+            if (error.status === 409) throw new Error("Состояние диалога изменилось или выполняется другое действие.");
+            if (error.status === 404) throw new Error("Диалог не найден.");
+            if (error.code === "telegram_rejected") throw new Error("Telegram отклонил сообщение.");
+            if (error.status === 400) throw new Error("Проверьте текст сообщения.");
+        }
+        throw new Error("Не удалось подтвердить действие. Проверьте историю перед повторной отправкой.");
+    }
 }
 
 export async function loadClients(): Promise<ClientRecord[]> {
@@ -132,9 +168,12 @@ export function mergeMessages(
 }
 
 export function toMessage(message: MessageRecord): Message {
+    const author = message.manager_kind === "reply" ? "manager"
+        : message.manager_kind === "notice" ? "notice"
+        : message.author === "bot" ? "bot" : "client";
     return {
         id: String(message.id),
-        author: message.author === "bot" ? "bot" : "client",
+        author,
         text: message.body ?? "Сообщение без текста",
         time: timeFormatter.format(new Date(message.created_at)),
         createdAt: message.created_at,
@@ -161,6 +200,7 @@ export function toChats({ clients, messages }: ChatsSnapshot): Chat[] {
             id,
             name: fullName || `Клиент ${client.user_telegram_id}`,
             telegramId: client.user_telegram_id,
+            managerUserId: client.manager_user_id ?? null,
             initials: fullName
                 ? fullName.split(/\s+/).slice(0, 2).map((part) => part[0]).join(
                     "",

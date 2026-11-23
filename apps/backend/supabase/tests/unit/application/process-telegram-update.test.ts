@@ -32,6 +32,8 @@ Deno.test('stores the incoming message, handles it, and stores the response', as
       events.push('handle')
       return Promise.resolve('response')
     },
+    isManaged: () => Promise.resolve(false),
+    acknowledgeManagedUpdate: () => Promise.resolve(),
     toIncomingMessage: () => incomingMessage,
     toOutgoingMessage: () => outgoingMessage,
   })
@@ -52,6 +54,8 @@ Deno.test('does not store an outgoing message when there is no response', async 
       },
     },
     handleUpdate: () => Promise.resolve(undefined),
+    isManaged: () => Promise.resolve(false),
+    acknowledgeManagedUpdate: () => Promise.resolve(),
     toIncomingMessage: () => incomingMessage,
     toOutgoingMessage: () => outgoingMessage,
   })
@@ -59,4 +63,44 @@ Deno.test('does not store an outgoing message when there is no response', async 
   await processUpdate('update')
 
   deepStrictEqual(savedMessages, [incomingMessage])
+})
+
+Deno.test('stores incoming messages during takeover and resumes automatic replies after release', async () => {
+  const saved: MessageRecord[] = []
+  const acknowledgements: string[] = []
+  let managed = true
+  const processUpdate = createProcessTelegramUpdate({
+    messageRepository: { async save(message) { saved.push(message) } },
+    handleUpdate: () => Promise.resolve('automatic reply'),
+    isManaged: () => Promise.resolve(managed),
+    async acknowledgeManagedUpdate(update: string) { acknowledgements.push(update) },
+    toIncomingMessage: update => update === 'callback' ? undefined : incomingMessage,
+    toOutgoingMessage: () => outgoingMessage,
+  })
+
+  deepStrictEqual(await processUpdate('message'), undefined)
+  deepStrictEqual(await processUpdate('callback'), undefined)
+  deepStrictEqual(saved, [incomingMessage])
+  deepStrictEqual(acknowledgements, ['message', 'callback'])
+  managed = false
+  deepStrictEqual(await processUpdate('message'), 'automatic reply')
+  deepStrictEqual(saved, [incomingMessage, incomingMessage, outgoingMessage])
+})
+
+Deno.test('suppresses a reply computed while a manager was connecting', async () => {
+  let managed = false
+  const saved: MessageRecord[] = []
+  const processUpdate = createProcessTelegramUpdate({
+    messageRepository: { async save(message) { saved.push(message) } },
+    async handleUpdate() {
+      managed = true
+      return 'automatic reply'
+    },
+    isManaged: () => Promise.resolve(managed),
+    acknowledgeManagedUpdate: () => Promise.resolve(),
+    toIncomingMessage: () => incomingMessage,
+    toOutgoingMessage: () => outgoingMessage,
+  })
+  deepStrictEqual(await processUpdate('message'), undefined)
+  deepStrictEqual(saved, [incomingMessage])
 })

@@ -12,14 +12,22 @@ export async function inboxAdminStatus(supabase: AdminClient, userId: string): P
   return data ? 200 : 403
 }
 
-export async function authorizeInbox(supabase: AdminClient, request: Request) {
+export async function identifyInboxAdmin(supabase: AdminClient, request: Request) {
   const token = bearerToken(request)
-  if (!token) return 401
+  if (!token) return { status: 401 } as const
 
   const { data, error } = await supabase.auth.getUser(token)
-  if (error) return error.status === 400 || error.status === 401 || error.status === 403 ? 401 : 503
-  if (!data.user) return 401
-  return inboxAdminStatus(supabase, data.user.id)
+  if (error) {
+    const invalid = error.status === 400 || error.status === 401 || error.status === 403
+    return { status: invalid ? 401 : 503 } as const
+  }
+  if (!data.user) return { status: 401 } as const
+  const status = await inboxAdminStatus(supabase, data.user.id)
+  return status === 200 ? { status, userId: data.user.id } as const : { status } as const
+}
+
+export async function authorizeInbox(supabase: AdminClient, request: Request) {
+  return (await identifyInboxAdmin(supabase, request)).status
 }
 
 export function inboxError(status: 401 | 403 | 500 | 503, headers: HeadersInit): Response {
