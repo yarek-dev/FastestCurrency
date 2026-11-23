@@ -44,3 +44,16 @@ jobs:
 
       - name: Deploy all Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Verify Telegram webhook starts
+        run: |
+          webhook_url="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/telegram-webhook"
+          # A GET reaches the handler and returns 405 without sending a Telegram update.
+          for attempt in {1..6}; do
+            if status=$(curl --silent --show-error --max-time 10 --output /dev/null --write-out '%{http_code}' "$webhook_url") && [[ "$status" == 405 ]]; then
+              exit 0
+            fi
+            echo "Attempt $attempt returned HTTP $status"
+            if [[ "$attempt" != 6 ]]; then sleep 5; fi
+          done
+          exit 1

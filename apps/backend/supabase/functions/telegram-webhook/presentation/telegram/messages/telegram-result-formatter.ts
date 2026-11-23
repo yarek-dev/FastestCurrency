@@ -1,7 +1,7 @@
 import type {
   ConversionResult,
   PeriodChangeResult,
-} from '@backend/supabase/functions/telegram-webhook/domain/currency.ts'
+} from '../../../domain/currency.ts'
 import {
   formatAmount,
   formatChange,

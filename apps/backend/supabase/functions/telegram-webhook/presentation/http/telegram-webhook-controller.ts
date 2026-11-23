@@ -1,7 +1,7 @@
 import type {
   TelegramUpdate,
   TelegramWebhookAction,
-} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-types.ts'
+} from '../telegram/telegram-types.ts'
 
 type ProcessTelegramUpdate = (
   update: TelegramUpdate,
