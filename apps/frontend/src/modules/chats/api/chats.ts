@@ -81,7 +81,7 @@ async function request<T>(endpoint: string, signal?: AbortSignal, body?: object)
     return response.json();
 }
 
-export const managerReplyLimit = 4096 - "Менеджер\n".length;
+export const managerReplyLimit = 4096 - "🎧 Менеджер\n\n".length;
 export type ManagerAction = { action: "connect" | "finish" } | { action: "send"; text: string };
 
 export async function runManagerAction(clientId: string, action: ManagerAction) {

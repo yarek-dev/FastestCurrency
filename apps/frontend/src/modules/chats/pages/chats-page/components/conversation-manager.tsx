@@ -54,7 +54,6 @@ export function ConversationManager({ clientId, managerUserId, adminUserId }: {
                     )}
                 </div>
             )}
-            {busy && <span role="status">Выполняем действие…</span>}
             {error && <p className={styles.managerError} role="alert">{error}</p>}
         </footer>
     );

@@ -41,7 +41,7 @@ Deno.test('uses the confirmed JWT identity and server-resolved Telegram chat and
   deepStrictEqual(await response.json(), { ok: true, message: { id: '5' } })
   deepStrictEqual(events, [
     { clientId, requestId, action: 'send', body: 'Здравствуйте!', userId: 'verified-admin' },
-    ['123', 'Менеджер\nЗдравствуйте!', 'Менеджер'.length],
+    ['123', '🎧 Менеджер\n\nЗдравствуйте!', { type: 'bold', offset: 0, length: 11 }],
     { clientId, requestId, outcome: 'done' },
   ])
 })
@@ -50,8 +50,12 @@ Deno.test('sends the connect and finish notices as specified', async () => {
   const { handle, events } = fixture()
   equal((await handle(request('connect'))).status, 200)
   equal((await handle(request('finish'))).status, 200)
-  deepStrictEqual(events[1], ['123', 'Менеджер подключился', 'Менеджер подключился'.length])
-  deepStrictEqual(events[4], ['123', 'Менеджер завершил диалог', 'Менеджер завершил диалог'.length])
+  deepStrictEqual(events[1], ['123', '🟢 Менеджер подключился', {
+    type: 'italic', offset: 3, length: 'Менеджер подключился'.length,
+  }])
+  deepStrictEqual(events[4], ['123', '⚪ Менеджер завершил диалог', {
+    type: 'italic', offset: 2, length: 'Менеджер завершил диалог'.length,
+  }])
 })
 
 Deno.test('rejects unauthorized requests, conflicting ownership and duplicate delivery', async () => {
@@ -71,8 +75,9 @@ Deno.test('validates action and text before reserving delivery', async () => {
   const { handle, events } = fixture()
   equal((await handle(request('other'))).status, 400)
   equal((await handle(request('send', '   '))).status, 400)
-  equal((await handle(request('send', 'a'.repeat(4096)))).status, 400)
+  equal((await handle(request('send', 'a'.repeat(4084)))).status, 400)
   deepStrictEqual(events, [])
+  equal((await handle(request('send', 'a'.repeat(4083)))).status, 200)
 })
 
 Deno.test('returns 429 and skips Telegram delivery when the database quota is full', async () => {
@@ -103,10 +108,12 @@ Deno.test('Telegram sender bolds only the heading and sends the reply as literal
   const send = createTelegramSender('test', async (_url, options) => {
     deepStrictEqual(JSON.parse(String(options?.body)), {
       chat_id: '123',
-      text: 'Менеджер\n<b>Текст & _</b>',
-      entities: [{ type: 'bold', offset: 0, length: 'Менеджер'.length }],
+      text: '🎧 Менеджер\n\n<b>Текст & _</b>',
+      entities: [{ type: 'bold', offset: 0, length: 11 }],
     })
     return Response.json({ ok: true })
   })
-  equal(await send('123', 'Менеджер\n<b>Текст & _</b>', 'Менеджер'.length), 'done')
+  equal(await send('123', '🎧 Менеджер\n\n<b>Текст & _</b>', {
+    type: 'bold', offset: 0, length: 11,
+  }), 'done')
 })

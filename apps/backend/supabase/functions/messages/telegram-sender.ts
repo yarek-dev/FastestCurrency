@@ -1,14 +1,14 @@
-import type { Delivery } from './manager-handler.ts'
+import type { Delivery, TelegramTextEntity } from './manager-handler.ts'
 
 export function createTelegramSender(token: string, sendRequest = fetch) {
-  return async (chatId: string, text: string, boldLength: number): Promise<Delivery> => {
+  return async (chatId: string, text: string, entity: TelegramTextEntity): Promise<Delivery> => {
     const response = await sendRequest(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        entities: [{ type: 'bold', offset: 0, length: boldLength }],
+        entities: [entity],
       }),
       signal: AbortSignal.timeout(8_000),
     })

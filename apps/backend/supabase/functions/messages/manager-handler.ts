@@ -6,6 +6,11 @@ export const messageCorsHeaders = { ...corsHeaders, 'Access-Control-Allow-Method
 const headers = { ...messageCorsHeaders, 'Cache-Control': 'no-store' }
 type ManagerAction = 'connect' | 'send' | 'finish'
 export type Delivery = 'done' | 'failed' | 'unknown'
+export interface TelegramTextEntity {
+  type: 'bold' | 'italic'
+  offset: number
+  length: number
+}
 type Reservation =
   | { status: 'ready'; chat_id: string }
   | { status: 'rate_limited'; retry_after: number }
@@ -19,13 +24,16 @@ interface Operation {
 interface Dependencies {
   identify: (request: Request) => Promise<{ status: 200; userId: string } | { status: 401 | 403 | 503 }>
   begin: (operation: Operation & { userId: string; action: ManagerAction; body: string }) => Promise<Reservation>
-  deliver: (chatId: string, text: string, boldLength: number) => Promise<Delivery>
+  deliver: (chatId: string, text: string, entity: TelegramTextEntity) => Promise<Delivery>
   complete: (operation: Operation, delivery: Delivery) => Promise<Record<string, unknown> | null>
 }
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const managerLabel = 'Менеджер'
-const notices = { connect: 'Менеджер подключился', finish: 'Менеджер завершил диалог' }
+const managerHeading = '🎧 Менеджер'
+const notices = {
+  connect: { marker: '🟢 ', body: 'Менеджер подключился' },
+  finish: { marker: '⚪ ', body: 'Менеджер завершил диалог' },
+}
 
 function json(status: number, body: Record<string, unknown>) {
   return Response.json(body, { status, headers })
@@ -49,11 +57,13 @@ export function createInboxManagerHandler({ identify, begin, deliver, complete }
       }
       const action: ManagerAction = input.action
       const operation = { clientId: input.clientId, requestId: input.requestId }
-      const body = action === 'send'
-        ? (typeof input.text === 'string' ? input.text.trim() : '')
-        : notices[action]
-      const label = action === 'send' ? managerLabel : body
-      const text = action === 'send' ? `${label}\n${body}` : body
+      const notice = action === 'send' ? undefined : notices[action]
+      const body = notice?.body ?? (typeof input.text === 'string' ? input.text.trim() : '')
+      const prefix = notice?.marker ?? `${managerHeading}\n\n`
+      const text = prefix + body
+      const entity: TelegramTextEntity = notice
+        ? { type: 'italic', offset: notice.marker.length, length: body.length }
+        : { type: 'bold', offset: 0, length: managerHeading.length }
       if (!body || text.length > 4096) return json(400, { error: 'invalid_text' })
 
       const reservation = await begin({ ...operation, action, body, userId: admin.userId })
@@ -72,7 +82,7 @@ export function createInboxManagerHandler({ identify, begin, deliver, complete }
         case 'unknown': return deliveryError(reservation.status)
         case 'ready': {
           sending = true
-          const outcome = await deliver(reservation.chat_id, text, label.length).catch(() => 'unknown' as const)
+          const outcome = await deliver(reservation.chat_id, text, entity).catch(() => 'unknown' as const)
           const message = await complete(operation, outcome)
           if (outcome !== 'done') return deliveryError(outcome)
           return message ? json(200, { ok: true, message }) : deliveryError('unknown')
