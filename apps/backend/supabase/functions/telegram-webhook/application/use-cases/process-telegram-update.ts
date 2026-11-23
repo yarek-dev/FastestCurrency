@@ -38,7 +38,7 @@ export function createProcessTelegramUpdate<TUpdate, TAction>({
     const action = await handleUpdate(update)
 
     if (action) {
-      // An operator may have connected while the exchange-rate request was in flight.
+      // An operator may have connected while the bot was preparing its response.
       if (await isManaged(update)) return
       const outgoingMessage = toOutgoingMessage(update, action)
 

@@ -1,5 +1,6 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
+import { createAnswerKnowledgeQuestion } from './application/use-cases/answer-knowledge-question.ts'
 import { createProcessTelegramUpdate } from './application/use-cases/process-telegram-update.ts'
 import { createConvertCurrency } from './application/use-cases/convert-currency.ts'
 import { createGetPeriodChange } from './application/use-cases/get-period-change.ts'
@@ -10,8 +11,10 @@ import {
   createFallbackProvider,
 } from './infrastructure/exchange-rates/fallback-provider.ts'
 import { createFrankfurterProvider } from './infrastructure/frankfurter/frankfurter-provider.ts'
+import { createGeminiKnowledgeLookup } from './infrastructure/gemini/gemini-knowledge.ts'
 import { createAnswerCallbackQuery } from './infrastructure/telegram/telegram-bot-api.ts'
 import { createTelegramWebhookController } from './presentation/http/telegram-webhook-controller.ts'
+import { createTelegramKnowledgeHandler } from './presentation/telegram/handlers/telegram-knowledge-handler.ts'
 import { createTelegramUpdateHandler } from './presentation/telegram/handlers/telegram-update-handler.ts'
 import {
   getPrivateTelegramUserId,
@@ -22,6 +25,8 @@ import {
 const webhookSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')
 const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
 const currencyBeaconApiKey = Deno.env.get('CURRENCY_BEACON_API_KEY')
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY')?.trim()
+const geminiModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.5-flash-lite'
 
 const getFrankfurterRate = createFrankfurterProvider()
 const getCurrencyBeaconRate = currencyBeaconApiKey
@@ -41,13 +46,26 @@ const getPeriodChange = createGetPeriodChange({
   frankfurter: getFrankfurterRate,
 })
 const answerCallbackQuery = createAnswerCallbackQuery(telegramBotToken ?? '')
-const handleTelegramUpdate = createTelegramUpdateHandler({
+const handleCurrencyUpdate = createTelegramUpdateHandler({
   answerCallbackQuery,
   convertCurrency,
   getPeriodChange,
 })
 
 const supabase = createSupabaseAdminClient()
+const handleTelegramUpdate = supabase && geminiApiKey
+  ? createTelegramKnowledgeHandler({
+    answerCallbackQuery,
+    answerQuestion: createAnswerKnowledgeQuestion({
+      selectQuery: createGeminiKnowledgeLookup({ apiKey: geminiApiKey, model: geminiModel }),
+      async search(query) {
+        const { data, error } = await supabase.rpc('search_knowledge', { p_query: query })
+        if (error) throw error
+        return data
+      },
+    }),
+  })
+  : handleCurrencyUpdate
 const messageRepository = supabase
   ? createSupabaseMessageRepository(supabase)
   : undefined
