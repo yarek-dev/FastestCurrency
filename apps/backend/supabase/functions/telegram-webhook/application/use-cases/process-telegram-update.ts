@@ -7,7 +7,6 @@ interface ProcessTelegramUpdateOptions<TUpdate, TAction> {
   messageRepository: MessageRepository
   handleUpdate: (update: TUpdate) => Promise<TAction | undefined>
   isManaged: (update: TUpdate) => Promise<boolean>
-  acknowledgeManagedUpdate: (update: TUpdate) => Promise<void>
   toIncomingMessage: (update: TUpdate) => MessageRecord | undefined
   toOutgoingMessage: (
     update: TUpdate,
@@ -19,7 +18,6 @@ export function createProcessTelegramUpdate<TUpdate, TAction>({
   messageRepository,
   handleUpdate,
   isManaged,
-  acknowledgeManagedUpdate,
   toIncomingMessage,
   toOutgoingMessage,
 }: ProcessTelegramUpdateOptions<TUpdate, TAction>) {
@@ -30,10 +28,7 @@ export function createProcessTelegramUpdate<TUpdate, TAction>({
       await messageRepository.save(incomingMessage)
     }
 
-    if (await isManaged(update)) {
-      await acknowledgeManagedUpdate(update)
-      return
-    }
+    if (await isManaged(update)) return
 
     const action = await handleUpdate(update)
 

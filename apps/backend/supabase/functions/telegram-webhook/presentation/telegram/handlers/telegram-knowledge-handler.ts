@@ -4,17 +4,10 @@ import type { TelegramUpdate, TelegramWebhookAction } from '../telegram-types.ts
 
 export function createTelegramKnowledgeHandler({
   answerQuestion,
-  answerCallbackQuery,
 }: {
   answerQuestion: AnswerKnowledgeQuestion
-  answerCallbackQuery: (id: string) => Promise<void>
 }) {
   return async (update: TelegramUpdate): Promise<TelegramWebhookAction | undefined> => {
-    if (update.callback_query?.id) {
-      await answerCallbackQuery(update.callback_query.id)
-      return
-    }
-
     const message = update.message
     if (message?.chat?.type !== 'private' || typeof message.chat.id !== 'number') return
 

@@ -8,14 +8,14 @@ const incomingMessage: MessageRecord = {
   firstName: 'Yaroslav',
   lastName: null,
   author: 'yarek_dev',
-  body: 'EUR USD',
+  body: 'Как оплатить через ЕРИП?',
   createdAt: '2026-09-17T10:00:00.000Z',
 }
 
 const outgoingMessage: MessageRecord = {
   ...incomingMessage,
   author: 'bot',
-  body: '1 EUR = 1.1 USD',
+  body: 'Для оплаты выберите медцентр в дереве услуг ЕРИП.',
   createdAt: '2026-09-17T10:00:01.000Z',
 }
 
@@ -33,7 +33,6 @@ Deno.test('stores the incoming message, handles it, and stores the response', as
       return Promise.resolve('response')
     },
     isManaged: () => Promise.resolve(false),
-    acknowledgeManagedUpdate: () => Promise.resolve(),
     toIncomingMessage: () => incomingMessage,
     toOutgoingMessage: () => outgoingMessage,
   })
@@ -55,7 +54,6 @@ Deno.test('does not store an outgoing message when there is no response', async 
     },
     handleUpdate: () => Promise.resolve(undefined),
     isManaged: () => Promise.resolve(false),
-    acknowledgeManagedUpdate: () => Promise.resolve(),
     toIncomingMessage: () => incomingMessage,
     toOutgoingMessage: () => outgoingMessage,
   })
@@ -67,21 +65,17 @@ Deno.test('does not store an outgoing message when there is no response', async 
 
 Deno.test('stores incoming messages during takeover and resumes automatic replies after release', async () => {
   const saved: MessageRecord[] = []
-  const acknowledgements: string[] = []
   let managed = true
   const processUpdate = createProcessTelegramUpdate({
     messageRepository: { async save(message) { saved.push(message) } },
     handleUpdate: () => Promise.resolve('automatic reply'),
     isManaged: () => Promise.resolve(managed),
-    async acknowledgeManagedUpdate(update: string) { acknowledgements.push(update) },
-    toIncomingMessage: update => update === 'callback' ? undefined : incomingMessage,
+    toIncomingMessage: () => incomingMessage,
     toOutgoingMessage: () => outgoingMessage,
   })
 
   deepStrictEqual(await processUpdate('message'), undefined)
-  deepStrictEqual(await processUpdate('callback'), undefined)
   deepStrictEqual(saved, [incomingMessage])
-  deepStrictEqual(acknowledgements, ['message', 'callback'])
   managed = false
   deepStrictEqual(await processUpdate('message'), 'automatic reply')
   deepStrictEqual(saved, [incomingMessage, incomingMessage, outgoingMessage])
@@ -97,7 +91,6 @@ Deno.test('suppresses a reply computed while a manager was connecting', async ()
       return 'automatic reply'
     },
     isManaged: () => Promise.resolve(managed),
-    acknowledgeManagedUpdate: () => Promise.resolve(),
     toIncomingMessage: () => incomingMessage,
     toOutgoingMessage: () => outgoingMessage,
   })

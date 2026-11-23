@@ -1,14 +1,11 @@
-# Fullstack Bot — Telegram-конвертер валют и криптовалют
+# Fullstack Bot — Telegram-справочник платных услуг
 
-Telegram-бот работает как Supabase Edge Function. Он принимает webhook-обновления Telegram, получает курсы через CurrencyBeacon или Frankfurter и возвращает результат через механизм webhook reply.
+Telegram-бот работает как Supabase Edge Function. Он ищет сведения о платных услугах по базе знаний и возвращает сформированный Gemini ответ в webhook reply.
 
 ## Возможности
 
-- конвертация по запросам `EUR`, `EUR USD` и `100 EUR USD`;
-- поддержка фиатных валют и криптовалют;
-- сравнение текущего курса со вчерашним;
-- изменение курса за 3, 7, 14 или 30 дней по inline-кнопкам;
-- CurrencyBeacon как основной источник и Frankfurter как резервный;
+- ответы о тарифах, услугах и оплате по базе знаний;
+- передача диалога менеджеру через админ-панель;
 - работа только в личных чатах;
 - проверка секретного токена Telegram webhook.
 
@@ -31,9 +28,8 @@ supabase/
 ├── functions/profile/           # учебный endpoint профиля
 ├── functions/telegram-webhook/
 │   ├── index.ts                 # composition root и HTTP-адаптер
-│   ├── domain/                  # модели валют и доменные ошибки
 │   ├── application/             # сценарии и порты
-│   ├── infrastructure/          # провайдеры курсов и Telegram Bot API
+│   ├── infrastructure/          # Gemini API и Supabase
 │   └── presentation/            # разбор и обработка Telegram update
 ├── migrations/                  # PostgreSQL, RPC и Realtime/RLS
 └── tests/
@@ -41,12 +37,13 @@ supabase/
     └── database/                # SQL-тесты
 
 scripts/
-└── set-telegram-webhook.ts      # регистрация webhook в Telegram
+├── import-knowledge.ts         # загрузка выгрузки в локальную базу
+└── set-telegram-webhook.ts     # регистрация webhook в Telegram
 
 deno.json                       # локальные проверки и скрипты, общий import map
 ```
 
-Проект сохраняет чистую архитектуру: зависимости направлены от внешних адаптеров к application/domain, а конкретные реализации связываются в `index.ts`.
+Сценарии из `application` получают реализации зависимостей через `index.ts`.
 
 ## Требования
 
@@ -63,7 +60,7 @@ deno.json                       # локальные проверки и скр�
 
 ## Ответы о платных услугах
 
-При заданном `GEMINI_API_KEY` webhook работает как справочник медцентра. Gemini выбирает ключевые слова, webhook ищет по тарифам и фрагментам через `search_knowledge`, а модель формулирует ответ по результатам. При активном менеджере автоматический ответ подавляется. Без ключа доступен сценарий конвертации валют.
+Webhook получает ключевые слова вопроса от Gemini и вызывает серверную RPC `search_knowledge`. PostgreSQL выбирает тарифы и фрагменты через полнотекстовый поиск. Gemini формулирует ответ по найденным данным. Пустая выдача приводит к просьбе уточнить вопрос, а сбой Gemini — к сообщению о временной недоступности. Менеджер может перехватить диалог до или во время обработки.
 
 Для локальной проверки примените миграции, загрузите базу знаний и запустите `pnpm supabase functions serve telegram-webhook --env-file .env` из корня. Путь `.env` относится к `apps/backend`, где выполняется команда CLI.
 
@@ -71,11 +68,10 @@ deno.json                       # локальные проверки и скр�
 
 | Переменная | Где используется | Назначение |
 | --- | --- | --- |
-| `TELEGRAM_BOT_TOKEN` | Edge Functions и локальный скрипт | Подтверждение callback query, ручная отправка сообщений и регистрация webhook. |
+| `TELEGRAM_BOT_TOKEN` | Edge Function `messages` и локальный скрипт | Ручная отправка сообщений и регистрация webhook. |
 | `TELEGRAM_WEBHOOK_SECRET` | Edge Function и локальный скрипт | Проверка заголовка `X-Telegram-Bot-Api-Secret-Token`. |
 | `TELEGRAM_WEBHOOK_URL` | Локальный скрипт | URL развёрнутой Edge Function. |
-| `CURRENCY_BEACON_API_KEY` | Edge Function | Необязательный ключ CurrencyBeacon. Без него используется Frankfurter. |
-| `GEMINI_API_KEY` | Edge Function | Ключ Gemini Developer API. Включает ответы по базе знаний. |
+| `GEMINI_API_KEY` | Edge Function | Ключ Gemini Developer API для поиска и генерации ответов. |
 | `GEMINI_MODEL` | Edge Function | Необязательный идентификатор модели Gemini. По умолчанию `gemini-3.5-flash-lite`. |
 
 Локальные значения хранятся в `.env`, который исключён из Git. Для Edge Function секреты задаются отдельно в Supabase.
@@ -103,11 +99,7 @@ pnpm supabase login
 pnpm supabase link --project-ref <project-ref>
 ```
 
-Загрузите секреты функции:
-
-```powershell
-pnpm supabase secrets set --env-file .env
-```
+Добавьте `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` и `GEMINI_API_KEY` в Edge Functions → Secrets выбранного проекта.
 
 Проверьте код и тесты:
 
@@ -147,11 +139,7 @@ pnpm telegram:webhook:set
 
 ## Работа webhook
 
-Telegram отправляет `POST` на URL Edge Function вместе с секретным заголовком. Функция выбирает обработчик обычного сообщения или callback query и возвращает действие `sendMessage` в JSON-ответе.
-
-Обычный запрос параллельно получает текущий и вчерашний курсы у одного провайдера. При допустимой ошибке CurrencyBeacon вся пара повторно запрашивается у Frankfurter, чтобы не смешивать данные разных источников.
-
-При нажатии кнопки текущий курс и провайдер читаются из `callback_data`. Функция запрашивает только исторический курс у того же провайдера и отправляет отдельное сообщение с изменением за выбранный период.
+Telegram отправляет `POST` на URL Edge Function вместе с секретным заголовком. Webhook обрабатывает сообщения из личных чатов и возвращает действие `sendMessage` в JSON-ответе.
 
 ## Архитектура
 
@@ -177,8 +165,5 @@ pnpm supabase functions deploy messages
 
 ## Ограничения
 
-- история хранится в PostgreSQL; кэш фронтенда живёт только до перезагрузки страницы;
-- доступность курсов зависит от внешних провайдеров;
-- Frankfurter поддерживает только фиатные валюты;
-- криптовалютные курсы требуют `CURRENCY_BEACON_API_KEY`;
-- тайм-аут каждого обращения к внешнему API составляет 3 секунды.
+- История хранится в PostgreSQL. Кэш фронтенда живёт до перезагрузки страницы.
+- Автоответы зависят от доступности Gemini API и наличия проиндексированных данных.

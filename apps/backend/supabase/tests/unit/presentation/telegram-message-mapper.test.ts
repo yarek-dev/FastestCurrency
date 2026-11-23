@@ -16,7 +16,7 @@ Deno.test('maps a private Telegram message to a database record', () => {
         username: 'yarek_dev',
       },
       chat: { id: 123, type: 'private' },
-      text: 'EUR USD',
+      text: 'Как оплатить через ЕРИП?',
     },
   })
 
@@ -25,25 +25,25 @@ Deno.test('maps a private Telegram message to a database record', () => {
     firstName: 'Yaroslav',
     lastName: 'Developer',
     author: 'yarek_dev',
-    body: 'EUR USD',
+    body: 'Как оплатить через ЕРИП?',
     createdAt: new Date(1_778_000_000_000).toISOString(),
   })
 })
 
-Deno.test('maps a callback response to a bot message', () => {
+Deno.test('maps a reply to a private Telegram message to a bot message', () => {
   const message = toOutgoingTelegramMessage({
-    callback_query: {
+    message: {
       from: { id: 123, first_name: 'Yaroslav' },
-      message: { chat: { id: 123, type: 'private' } },
+      chat: { id: 123, type: 'private' },
     },
   }, {
     method: 'sendMessage',
     chat_id: 123,
-    text: 'Period result',
+    text: 'Для оплаты выберите медцентр в дереве услуг ЕРИП.',
   })
 
   strictEqual(message?.userTelegramId, '123')
   strictEqual(message?.author, 'bot')
-  strictEqual(message?.body, 'Period result')
+  strictEqual(message?.body, 'Для оплаты выберите медцентр в дереве услуг ЕРИП.')
   strictEqual(Number.isNaN(Date.parse(message?.createdAt ?? '')), false)
 })

@@ -2,7 +2,7 @@
 
 ## Контекст и границы
 
-Fullstack Bot — Telegram-бот для конвертации валют и веб-интерфейс истории переписки. Это pnpm-монорепозиторий с двумя приложениями:
+Fullstack Bot — Telegram-справочник платных услуг медцентра и веб-интерфейс истории переписки. Это pnpm-монорепозиторий с двумя приложениями:
 
 - `apps/frontend/`: React, TypeScript, Vite, TanStack Router, SWR, Supabase Realtime.
 - `apps/backend/`: Supabase Edge Functions на Deno, PostgreSQL, миграции, SQL- и unit-тесты, служебные скрипты.
@@ -49,7 +49,7 @@ Edge Functions: `telegram-webhook` обрабатывает Telegram updates, `c
 
 - Общий import map — `supabase/functions/deno.json`, общий lockfile — `supabase/functions/deno.lock`. `apps/backend/deno.json` подключает их для локальных проверок и скриптов. Все функции в `supabase/config.toml` используют общий import map.
 - Алиас `@backend/` указывает на корень backend. В Deno-импортах локальных TypeScript-файлов сохраняй расширение `.ts`.
-- В `telegram-webhook/domain/` находятся бизнес-типы и ошибки без зависимостей от инфраструктуры. `application/` содержит сценарии и порты. `presentation/` разбирает Telegram/HTTP-ввод и формирует ответы. `infrastructure/` реализует внешние API и работу с базой.
+- В `telegram-webhook/application/` находятся сценарии и порты. `presentation/` разбирает Telegram/HTTP-ввод и формирует ответы. `infrastructure/` реализует обращения к Gemini и работу с базой.
 - Передавай реализации портов через аргументы; связывай конкретные зависимости в `telegram-webhook/index.ts`. `application` не импортирует `presentation` или `infrastructure`.
 - Общие серверные адаптеры находятся в `functions/_shared/`. Простые HTTP-функции не требуют копирования всей структуры слоёв Telegram-функции.
 - При добавлении Edge Function обнови `supabase/config.toml` и список точек входа в backend-команде `typecheck`: сейчас он задан явно.
@@ -61,7 +61,7 @@ Edge Functions: `telegram-webhook` обрабатывает Telegram updates, `c
 - Курсор использует `(created_at, id)`. Не теряй микросекунды времени и точность PostgreSQL bigint: ID передаются строками в ответах API, сравнение больших ID выполняется через `BigInt`, а не `Number`.
 - Объединяй сообщения по ID с устойчивым порядком. После переподключения восстанавливай пропущенные сообщения через `after`, сохраняя загруженную историю. Не добавляй polling или сброс кэша без требования задачи.
 - При загрузке старых сообщений сохраняй положение прокрутки; автоматическая прокрутка новых сообщений зависит от положения пользователя.
-- При fallback провайдера курсов текущий и исторический курсы должны приходить от одного источника. Для callback сравнение выполняется с провайдером, сохранённым в callback data.
+- Для справочника сохраняй поиск по базе знаний и приоритет менеджера до и после генерации ответа.
 - Изменения схемы, RPC, индексов, RLS и Realtime-публикаций оформляй новыми миграциями в `supabase/migrations/`. Не переписывай уже применённые миграции. SQL-поведение проверяй в `supabase/tests/database/`.
 
 ## Переменные окружения и развёртывание

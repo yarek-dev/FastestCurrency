@@ -40,15 +40,6 @@ function getConversation(
   if (message?.chat?.type === 'private') {
     return toConversation(message.from, message.chat.id)
   }
-
-  const callbackQuery = update.callback_query
-
-  if (callbackQuery?.message?.chat?.type === 'private') {
-    return toConversation(
-      callbackQuery.from,
-      callbackQuery.message.chat.id,
-    )
-  }
 }
 
 export function getPrivateTelegramUserId(update: TelegramUpdate): string | undefined {

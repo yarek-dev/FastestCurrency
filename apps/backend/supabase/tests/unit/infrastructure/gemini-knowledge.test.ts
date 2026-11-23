@@ -16,7 +16,6 @@ Deno.test('Telegram answers with the result of a Gemini lookup against the knowl
   const requests: Array<Record<string, unknown>> = []
   const matches = { tariffs: [{ amount: '150.00', currency: 'BYN' }], chunks: [] }
   const handler = createTelegramKnowledgeHandler({
-    answerCallbackQuery: async () => {},
     answerQuestion: createAnswerKnowledgeQuestion({
       selectQuery: createGeminiKnowledgeLookup({
         apiKey: 'test-key',
@@ -51,7 +50,6 @@ Deno.test('Telegram answers with the result of a Gemini lookup against the knowl
 
 Deno.test('an empty search asks for clarification without generating an ungrounded answer', async () => {
   const handler = createTelegramKnowledgeHandler({
-    answerCallbackQuery: async () => {},
     answerQuestion: createAnswerKnowledgeQuestion({
       selectQuery: async () => ({
         query: 'unknown',
@@ -70,7 +68,6 @@ Deno.test('an empty search asks for clarification without generating an unground
 
 Deno.test('a Gemini HTTP failure gives the user a temporary error message', async () => {
   const handler = createTelegramKnowledgeHandler({
-    answerCallbackQuery: async () => {},
     answerQuestion: createAnswerKnowledgeQuestion({
       selectQuery: createGeminiKnowledgeLookup({
         apiKey: 'test-key',

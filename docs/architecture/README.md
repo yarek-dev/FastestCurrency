@@ -15,8 +15,8 @@
 В рабочем режиме система включает:
 
 - React frontend из `apps/frontend/`, размещаемый на GitHub Pages: список клиентов, история сообщений и восстановление пропущенных сообщений после переподключения;
-- Supabase Edge Functions из `apps/backend/supabase/functions/`, выполняемые в Deno: `telegram-webhook` обрабатывает Telegram updates и сохраняет историю, `admin-auth` передаёт операции сессии в Supabase Auth, `clients` возвращает список клиентов с последним сообщением, `messages` возвращает страницы истории, `profile` служит учебным endpoint;
-- PostgreSQL в Supabase: таблицы клиентов и сообщений, серверные RPC для сохранения и чтения истории, индексы, RLS и миграции;
+- Supabase Edge Functions из `apps/backend/supabase/functions/`, выполняемые в Deno: `telegram-webhook` отвечает по базе знаний через Gemini и сохраняет историю, `admin-auth` передаёт операции сессии в Supabase Auth, `clients` возвращает список клиентов с последним сообщением, `messages` возвращает страницы истории, `profile` служит учебным endpoint;
+- PostgreSQL в Supabase: таблицы клиентов, сообщений и базы знаний, серверные RPC, RLS и миграции;
 - Supabase Realtime: доставка изменений таблиц в браузер.
 
 Frontend читает первоначальное состояние и страницы истории через HTTP-функции, а изменения получает напрямую через Realtime с пользовательским JWT. Серверные функции проверяют JWT и членство пользователя в `public.inbox_admins`. Политики RLS используют тот же список для проверки доступа к таблицам и Realtime. SWR хранит загруженные данные в памяти браузера до выхода или перезагрузки. Запись сообщений выполняется через service role. Отдельных очереди и серверного кэша нет.
@@ -29,19 +29,18 @@ Frontend читает первоначальное состояние и стр�
 
 `apps/backend/supabase/functions/deno.json` содержит общий import map, рядом расположен общий `deno.lock`. Локальный `apps/backend/deno.json` подключает их для проверок и служебных скриптов. Каждая функция в `supabase/config.toml` явно подключает общий import map, поэтому остальные функции не зависят от конфигурации `telegram-webhook`.
 
-`pnpm typecheck` проверяет оба приложения, включая все четыре серверные точки входа и служебный скрипт. `pnpm test` запускает unit-тесты обоих приложений; `pnpm test:db` отдельно проверяет локальную базу. Frontend workflow проверяет типы, тесты и сборку перед GitHub Pages. Backend workflow запускается вручную, применяет миграции, затем развёртывает все Edge Functions. Из корня `pnpm deploy:backend` развёртывает только функции.
+`pnpm typecheck` проверяет оба приложения, включая серверные точки входа и служебные скрипты. `pnpm test` запускает unit-тесты обоих приложений; `pnpm test:db` отдельно проверяет локальную базу. Frontend workflow проверяет типы, тесты и сборку перед GitHub Pages. Backend workflow запускается вручную, применяет миграции, затем развёртывает все Edge Functions. Из корня `pnpm deploy:backend` развёртывает только функции.
 
 ## Чистая архитектура
 
 Код функции находится в `apps/backend/supabase/functions/telegram-webhook` и разделён на слои:
 
-- `domain` содержит бизнес-типы и ошибки и не зависит от других слоёв;
-- `application` содержит сценарии `Convert Currency`, `Get Period Change`, `Process Telegram Update` и порты провайдера курсов и репозитория сообщений;
+- `application` содержит сценарии `Answer Knowledge Question`, `Process Telegram Update` и порт репозитория сообщений.
 - `presentation` разбирает Telegram update, вызывает сценарии и форматирует webhook action;
-- `infrastructure` реализует доступ к CurrencyBeacon, Frankfurter, Telegram Bot API и сохранение сообщений в Supabase;
+- `infrastructure` реализует доступ к Gemini и сохранение сообщений в Supabase.
 - `index.ts` является composition root и HTTP-адаптером Edge Runtime.
 
-Конкретные реализации передаются сценариям и обработчикам через функции. `application` не импортирует `presentation` или `infrastructure`, а `domain` не знает о Supabase, Telegram и провайдерах.
+Конкретные реализации передаются сценариям и обработчикам через функции. `application` не импортирует `presentation` или `infrastructure`.
 
 ## Компоненты
 
@@ -50,23 +49,13 @@ Frontend читает первоначальное состояние и стр�
 | HTTP Interface / Composition Root | `apps/backend/supabase/functions/telegram-webhook/index.ts` |
 | Process Telegram Update | `application/use-cases/process-telegram-update.ts` |
 | Message Repository | `infrastructure/database/supabase-message-repository.ts` |
-| Telegram Update Router | `presentation/telegram/handlers/telegram-update-handler.ts` |
-| Message Handler | `presentation/telegram/handlers/telegram-message-handler.ts` |
-| Callback Query Handler | `presentation/telegram/handlers/telegram-callback-query-handler.ts` |
-| Convert Currency | `application/use-cases/convert-currency.ts` |
-| Get Period Change | `application/use-cases/get-period-change.ts` |
-| Exchange Rate Pair / Fallback | `infrastructure/exchange-rates/fallback-provider.ts` |
-| CurrencyBeacon Adapter | `infrastructure/currency-beacon/currency-beacon-provider.ts` |
-| Frankfurter Adapter | `infrastructure/frankfurter/frankfurter-provider.ts` |
-| Telegram Callback Client | `infrastructure/telegram/telegram-bot-api.ts` |
+| Knowledge Handler | `presentation/telegram/handlers/telegram-knowledge-handler.ts` |
+| Answer Knowledge Question | `application/use-cases/answer-knowledge-question.ts` |
+| Gemini Knowledge Answer | `infrastructure/gemini/gemini-knowledge.ts` |
 
-## Получение курсов
+## Поиск по базе знаний
 
-При обычном запросе `Convert Currency` запрашивает текущий и вчерашний курсы. `Exchange Rate Pair / Fallback` получает оба значения параллельно у одного провайдера. Если CurrencyBeacon настроен и допускает fallback после сбоя, вся пара запрашивается у Frankfurter.
-
-При нажатии кнопки обработчик восстанавливает валютную пару, исходный курс, провайдера и период из `callback_data`. Опорная дата берётся из исходного Telegram-сообщения. `Get Period Change` получает один исторический курс у указанного провайдера без fallback, поэтому данные разных источников не смешиваются.
-
-Callback query подтверждается отдельным вызовом `answerCallbackQuery`. Ошибка подтверждения не отменяет расчёт периода. Результаты обычного сообщения и периода возвращаются как `sendMessage` в ответе на webhook.
+Gemini выделяет ключевые слова из вопроса. RPC `search_knowledge` находит подходящие тарифы и фрагменты через полнотекстовый поиск. Затем Gemini формулирует ответ по найденным данным.
 
 ## История переписки
 
