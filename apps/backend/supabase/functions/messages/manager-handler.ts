@@ -8,6 +8,7 @@ type ManagerAction = 'connect' | 'send' | 'finish'
 export type Delivery = 'done' | 'failed' | 'unknown'
 type Reservation =
   | { status: 'ready'; chat_id: string }
+  | { status: 'rate_limited'; retry_after: number }
   | { status: Delivery | 'missing' | 'conflict' | 'pending' | 'forbidden' }
 
 interface Operation {
@@ -58,6 +59,11 @@ export function createInboxManagerHandler({ identify, begin, deliver, complete }
       const reservation = await begin({ ...operation, action, body, userId: admin.userId })
       switch (reservation.status) {
         case 'done': return json(200, { ok: true })
+        case 'rate_limited':
+          return Response.json({ error: 'rate_limited', retryAfter: reservation.retry_after }, {
+            status: 429,
+            headers: { ...headers, 'Retry-After': String(reservation.retry_after), 'Access-Control-Expose-Headers': 'Retry-After' },
+          })
         case 'forbidden': return inboxError(403, headers)
         case 'missing': return json(404, { error: 'dialog_missing' })
         case 'conflict':

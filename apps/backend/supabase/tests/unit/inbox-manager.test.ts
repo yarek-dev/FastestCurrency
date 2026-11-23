@@ -75,6 +75,18 @@ Deno.test('validates action and text before reserving delivery', async () => {
   deepStrictEqual(events, [])
 })
 
+Deno.test('returns 429 and skips Telegram delivery when the database quota is full', async () => {
+  const { handle, events } = fixture({
+    begin: () => Promise.resolve({ status: 'rate_limited', retry_after: 42 }),
+  })
+  const response = await handle(request('send', 'Текст'))
+  equal(response.status, 429)
+  equal(response.headers.get('Retry-After'), '42')
+  equal(response.headers.get('Access-Control-Expose-Headers'), 'Retry-After')
+  deepStrictEqual(await response.json(), { error: 'rate_limited', retryAfter: 42 })
+  deepStrictEqual(events, [])
+})
+
 Deno.test('distinguishes Telegram rejection from an ambiguous delivery', async () => {
   for (const outcome of ['failed', 'unknown'] as const) {
     const { handle, events } = fixture({

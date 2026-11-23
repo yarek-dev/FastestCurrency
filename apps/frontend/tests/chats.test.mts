@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
-import { test } from 'vitest'
-import { compareMessages, toChats, type ClientRecord, type MessageRecord } from '@frontend/src/modules/chats/api/chats.ts'
+import { test, vi } from 'vitest'
+import { compareMessages, runManagerAction, toChats, type ClientRecord, type MessageRecord } from '@frontend/src/modules/chats/api/chats.ts'
+
+vi.mock('@frontend/src/lib/supabase', () => ({
+  getInboxClient: () => ({
+    auth: { getSession: async () => ({ data: { session: { access_token: 'test-session' } } }) },
+  }),
+}))
 
 const client: ClientRecord = {
   id: 1, user_telegram_id: '123', first_name: 'Анна', last_name: null,
@@ -37,4 +43,22 @@ test('clients are displayed by last activity without modifying source arrays', (
   assert.equal(chats[0].id, '2')
   assert.equal(chats[1].messages[0].text, 'Привет')
   assert.equal(clients[0].id, 1)
+})
+
+test('manager requests show the retry time without resending the message', async () => {
+  vi.stubEnv('VITE_SUPABASE_URL', 'https://example.test')
+  vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'test-key')
+  const fetchMessage = vi.fn(async () => Response.json(
+    { error: 'rate_limited', retryAfter: 42 },
+    { status: 429 },
+  ))
+  vi.stubGlobal('fetch', fetchMessage)
+  try {
+    await assert.rejects(runManagerAction('1', { action: 'send', text: 'Ответ' }),
+      { message: 'Лимит отправки исчерпан. Повторите через 42 сек.' })
+    assert.equal(fetchMessage.mock.calls.length, 1)
+  } finally {
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  }
 })

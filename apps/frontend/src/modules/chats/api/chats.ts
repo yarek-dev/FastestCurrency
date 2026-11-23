@@ -1,4 +1,4 @@
-import type { Chat, Message } from "@frontend/src/modules/chats/types/chats";
+﻿import type { Chat, Message } from "@frontend/src/modules/chats/types/chats";
 
 import { getInboxClient } from "@frontend/src/lib/supabase";
 
@@ -49,7 +49,7 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", {
 });
 
 class InboxRequestError extends Error {
-    constructor(readonly status: number, readonly code?: string) {
+    constructor(readonly status: number, readonly code?: string, readonly retryAfter?: number) {
         super(status === 403
             ? "Доступ к перепискам закрыт."
             : `Не удалось загрузить переписки (HTTP ${status}).`);
@@ -76,7 +76,7 @@ async function request<T>(endpoint: string, signal?: AbortSignal, body?: object)
     });
     if (!response.ok) {
         const payload = body ? await response.json().catch(() => null) : null;
-        throw new InboxRequestError(response.status, payload?.error);
+        throw new InboxRequestError(response.status, payload?.error, payload?.retryAfter);
     }
     return response.json();
 }
@@ -94,6 +94,12 @@ export async function runManagerAction(clientId: string, action: ManagerAction) 
     } catch (error) {
         if (error instanceof InboxRequestError) {
             if (error.status === 401 || error.status === 403) throw error;
+            if (error.status === 429) {
+                const seconds = error.retryAfter;
+                throw new Error(typeof seconds === "number" && Number.isSafeInteger(seconds) && seconds > 0
+                    ? `Лимит отправки исчерпан. Повторите через ${seconds} сек.`
+                    : "Лимит отправки исчерпан. Попробуйте чуть позже.");
+            }
             if (error.status === 409) throw new Error("Состояние диалога изменилось или выполняется другое действие.");
             if (error.status === 404) throw new Error("Диалог не найден.");
             if (error.code === "telegram_rejected") throw new Error("Telegram отклонил сообщение.");
