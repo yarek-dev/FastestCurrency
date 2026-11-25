@@ -2,7 +2,6 @@ import type { MessageRecord } from '../../application/ports/message-repository.t
 import type {
   TelegramUpdate,
   TelegramUser,
-  TelegramWebhookAction,
 } from './telegram-types.ts'
 
 interface TelegramConversation {
@@ -42,10 +41,6 @@ function getConversation(
   }
 }
 
-export function getPrivateTelegramUserId(update: TelegramUpdate): string | undefined {
-  return getConversation(update)?.userTelegramId
-}
-
 function toIsoDate(unixSeconds: number | undefined): string {
   if (
     typeof unixSeconds === 'number' &&
@@ -72,23 +67,5 @@ export function toIncomingTelegramMessage(
     ...conversation,
     body: typeof message.text === 'string' ? message.text : null,
     createdAt: toIsoDate(message.date),
-  }
-}
-
-export function toOutgoingTelegramMessage(
-  update: TelegramUpdate,
-  action: TelegramWebhookAction,
-): MessageRecord | undefined {
-  const conversation = getConversation(update)
-
-  if (!conversation) {
-    return
-  }
-
-  return {
-    ...conversation,
-    author: 'bot',
-    body: action.text,
-    createdAt: new Date().toISOString(),
   }
 }

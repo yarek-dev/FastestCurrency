@@ -1,9 +1,7 @@
 import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 
-import {
-  toIncomingTelegramMessage,
-  toOutgoingTelegramMessage,
-} from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-message-mapper.ts'
+import { toIncomingTelegramMessage } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-message-mapper.ts'
+import { createTelegramUpdateAdapter } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/telegram-update-adapter.ts'
 
 Deno.test('maps a private Telegram message to a database record', () => {
   const message = toIncomingTelegramMessage({
@@ -30,20 +28,13 @@ Deno.test('maps a private Telegram message to a database record', () => {
   })
 })
 
-Deno.test('maps a reply to a private Telegram message to a bot message', () => {
-  const message = toOutgoingTelegramMessage({
-    message: {
-      from: { id: 123, first_name: 'Yaroslav' },
-      chat: { id: 123, type: 'private' },
-    },
-  }, {
-    method: 'sendMessage',
-    chat_id: 123,
-    text: 'Для оплаты выберите медцентр в дереве услуг ЕРИП.',
+Deno.test('passes only private messages to the application and addresses the reply to the chat', async () => {
+  const handle = createTelegramUpdateAdapter(async ({ incoming, replyTo }) => {
+    strictEqual(incoming?.userTelegramId, '123')
+    deepStrictEqual(replyTo, { text: '/start' })
+    return 'Здравствуйте!'
   })
-
-  strictEqual(message?.userTelegramId, '123')
-  strictEqual(message?.author, 'bot')
-  strictEqual(message?.body, 'Для оплаты выберите медцентр в дереве услуг ЕРИП.')
-  strictEqual(Number.isNaN(Date.parse(message?.createdAt ?? '')), false)
+  const message = { from: { id: 123 }, chat: { id: 456, type: 'private' }, text: '/start' }
+  deepStrictEqual(await handle({ message }), { method: 'sendMessage', chat_id: 456, text: 'Здравствуйте!' })
+  strictEqual(await handle({ message: { ...message, chat: { id: 999, type: 'group' } } }), undefined)
 })

@@ -1,12 +1,12 @@
 import { deepStrictEqual, strictEqual, throws } from 'node:assert/strict'
-import { decodeCursor, encodeCursor, parsePagination, toPage } from '@backend/supabase/functions/messages/pagination.ts'
+import { decodeCursor, encodeCursor, parsePagination, toPage } from '@backend/supabase/functions/messages/presentation/http/pagination.ts'
 
 Deno.test('cursor preserves microseconds and bigint IDs', () => {
   const row = { id: '9223372036854775807', created_at: '2026-10-05T10:00:00.123456+00:00' }
   const cursor = encodeCursor(row)
   deepStrictEqual(decodeCursor(cursor), { id: row.id, createdAt: row.created_at })
   deepStrictEqual(parsePagination(new URL(`https://example.com/messages?client_id=42&direction=after&cursor=${cursor}`)), {
-    p_client_id: '42', p_created_at: row.created_at, p_id: row.id, p_direction: 'after',
+    clientId: '42', createdAt: row.created_at, id: row.id, direction: 'after',
   })
 })
 

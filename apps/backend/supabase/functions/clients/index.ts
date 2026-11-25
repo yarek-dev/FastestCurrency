@@ -1,38 +1,15 @@
-import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
-import { corsHeaders } from '../_shared/cors.ts'
-import { authorizeInbox, inboxError } from '../_shared/inbox-access.ts'
+import { createResolveInboxAdmin } from '../_shared/application/inbox-access.ts'
+import { createIdentifyInboxAdmin } from '../_shared/presentation/http/inbox-access.ts'
+import { createSupabaseInboxAccess } from '../_shared/infrastructure/supabase-inbox-access.ts'
+import { createSupabaseInboxReader } from '../_shared/infrastructure/supabase-inbox-reader.ts'
+import { createSupabaseAdminClient } from '../_shared/infrastructure/supabase-admin.ts'
+import { createClientsHandler } from './presentation/http/handler.ts'
 
 const supabase = createSupabaseAdminClient()
-
+const access = supabase && createSupabaseInboxAccess(supabase)
 export default {
-  async fetch(request: Request): Promise<Response> {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders })
-    }
-
-    if (request.method !== 'GET') {
-      return Response.json(
-        { error: 'Method Not Allowed' },
-        { status: 405, headers: { ...corsHeaders, Allow: 'GET, OPTIONS' } },
-      )
-    }
-
-    if (!supabase) return inboxError(500, corsHeaders)
-    const access = await authorizeInbox(supabase, request)
-    if (access !== 200) return inboxError(access, corsHeaders)
-
-    const { data, error } = await supabase.rpc('list_inbox_clients')
-
-    if (error) {
-      console.error('Failed to load clients', error)
-      return Response.json(
-        { error: 'Internal Server Error' },
-        { status: 500, headers: corsHeaders },
-      )
-    }
-
-    return Response.json(data, {
-      headers: { ...corsHeaders, 'Cache-Control': 'no-store' },
-    })
-  },
+  fetch: createClientsHandler(supabase && access ? {
+    identify: createIdentifyInboxAdmin(createResolveInboxAdmin(access.resolveIdentity, access.checkGrant)),
+    listClients: createSupabaseInboxReader(supabase).listClients,
+  } : undefined),
 }

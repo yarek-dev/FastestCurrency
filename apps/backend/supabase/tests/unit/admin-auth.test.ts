@@ -1,8 +1,18 @@
 import { deepStrictEqual as assertEquals } from 'node:assert/strict'
-import { createAdminAuthHandler } from '@backend/supabase/functions/admin-auth/handler.ts'
+import { createAdminAuthHandler } from '@backend/supabase/functions/admin-auth/presentation/http/handler.ts'
+import { createAdminSession } from '@backend/supabase/functions/admin-auth/application/admin-session.ts'
+import { createSupabaseAuthExchange } from '@backend/supabase/functions/admin-auth/infrastructure/supabase-auth-exchange.ts'
+import type { CheckInboxGrant } from '@backend/supabase/functions/_shared/application/inbox-access.ts'
 
 const credentials = { email: 'admin@example.com', password: 'example-password' }
 const session = { access_token: 'test-access', refresh_token: 'test-refresh', user: { id: 'test-user' } }
+
+function createHandler({ checkAdmin, fetchAuth }: { checkAdmin: CheckInboxGrant; fetchAuth: typeof fetch }) {
+  return createAdminAuthHandler(createAdminSession(
+    createSupabaseAuthExchange('http://auth.test/auth/v1', 'public-key', fetchAuth),
+    checkAdmin,
+  ))
+}
 
 function request(action: string, method: string, body?: unknown, headers?: HeadersInit) {
   return new Request('http://localhost/functions/v1/admin-auth/' + action, {
@@ -11,8 +21,8 @@ function request(action: string, method: string, body?: unknown, headers?: Heade
 }
 
 Deno.test('validates login requests and exposes only the four auth operations', async () => {
-  const handler = createAdminAuthHandler({
-    authUrl: 'http://auth.test/auth/v1', apiKey: 'public-key', checkAdmin: () => Promise.resolve(200),
+  const handler = createHandler({
+    checkAdmin: () => Promise.resolve('allowed'),
     fetchAuth: () => { throw new Error('unexpected upstream call') },
   })
   assertEquals((await handler(request('login', 'POST', { ...credentials, password: 'short' }))).status, 400)
@@ -25,9 +35,8 @@ Deno.test('validates login requests and exposes only the four auth operations', 
 Deno.test('returns a session only for admins at login and refresh', async () => {
   let admin = true
   const calls: Array<{ url: string; body: unknown; authorization: string | null }> = []
-  const handler = createAdminAuthHandler({
-    authUrl: 'http://auth.test/auth/v1', apiKey: 'public-key',
-    checkAdmin: userId => Promise.resolve(admin && userId === 'test-user' ? 200 : 403),
+  const handler = createHandler({
+    checkAdmin: userId => Promise.resolve(admin && userId === 'test-user' ? 'allowed' : 'forbidden'),
     fetchAuth: (input, init) => {
       calls.push({ url: String(input), body: JSON.parse(String(init?.body)), authorization: new Headers(init?.headers).get('authorization') })
       return Promise.resolve(Response.json(session))
@@ -48,8 +57,8 @@ Deno.test('returns a session only for admins at login and refresh', async () => 
 })
 
 Deno.test('revoked users cannot restore the panel but can still log out', async () => {
-  const handler = createAdminAuthHandler({
-    authUrl: 'http://auth.test/auth/v1', apiKey: 'public-key', checkAdmin: () => Promise.resolve(403),
+  const handler = createHandler({
+    checkAdmin: () => Promise.resolve('forbidden'),
     fetchAuth: (input, init) => {
       assertEquals(new Headers(init?.headers).get('authorization'), 'Bearer test-access')
       return Promise.resolve(String(input).endsWith('/user')

@@ -1,3 +1,5 @@
+import type { HistoryPageQuery } from '../../../_shared/application/inbox-reader.ts'
+
 export const pageSize = 20
 
 interface Cursor {
@@ -28,17 +30,17 @@ export function decodeCursor(value: string): Cursor {
   }
 }
 
-export function parsePagination(url: URL) {
+export function parsePagination(url: URL): HistoryPageQuery {
   const clientId = url.searchParams.get('client_id')
   const direction = url.searchParams.get('direction') ?? 'before'
   const encoded = url.searchParams.get('cursor')
-  if (!validId(clientId) || !['before', 'after'].includes(direction)) throw new Error('Invalid pagination parameters')
+  if (!validId(clientId) || (direction !== 'before' && direction !== 'after')) throw new Error('Invalid pagination parameters')
   const cursor = encoded === null ? null : decodeCursor(encoded)
   return {
-    p_client_id: clientId,
-    p_created_at: cursor?.createdAt ?? null,
-    p_id: cursor?.id ?? null,
-    p_direction: direction,
+    clientId,
+    createdAt: cursor?.createdAt ?? null,
+    id: cursor?.id ?? null,
+    direction,
   }
 }
 

@@ -1,8 +1,10 @@
 import { deepStrictEqual, equal } from 'node:assert/strict'
-import { createInboxManagerHandler } from '../../functions/messages/manager-handler.ts'
-import { createTelegramSender } from '../../functions/messages/telegram-sender.ts'
+import { createInboxManagerHandler } from '../../functions/messages/presentation/http/manager-handler.ts'
+import { createManageConversation, type DeliverManagerMessage, type ManagerOperations } from '../../functions/messages/application/manage-conversation.ts'
+import type { IdentifyInboxAdmin } from '../../functions/_shared/presentation/http/inbox-access.ts'
+import { createTelegramSender } from '../../functions/messages/infrastructure/telegram-sender.ts'
 
-type Dependencies = Parameters<typeof createInboxManagerHandler>[0]
+type Dependencies = ManagerOperations & { identify: IdentifyInboxAdmin; deliver: DeliverManagerMessage }
 const clientId = '9007199254741000'
 const requestId = '00000000-0000-4000-8000-000000000001'
 
@@ -15,11 +17,11 @@ function request(action: string, text?: string) {
 
 function fixture(overrides: Partial<Dependencies> = {}) {
   const events: unknown[] = []
-  const handle = createInboxManagerHandler({
+  const dependencies: Dependencies = {
     identify: () => Promise.resolve({ status: 200, userId: 'verified-admin' }),
     async begin(operation) {
       events.push(operation)
-      return { status: 'ready', chat_id: '123' }
+      return { status: 'ready', destination: '123' }
     },
     async deliver(...args) {
       events.push(args)
@@ -30,7 +32,8 @@ function fixture(overrides: Partial<Dependencies> = {}) {
       return { id: '5' }
     },
     ...overrides,
-  })
+  }
+  const handle = createInboxManagerHandler(dependencies.identify, createManageConversation(dependencies, dependencies.deliver))
   return { handle, events }
 }
 
@@ -41,7 +44,7 @@ Deno.test('uses the confirmed JWT identity and server-resolved Telegram chat and
   deepStrictEqual(await response.json(), { ok: true, message: { id: '5' } })
   deepStrictEqual(events, [
     { clientId, requestId, action: 'send', body: 'Здравствуйте!', userId: 'verified-admin' },
-    ['123', '🎧 Менеджер\n\nЗдравствуйте!', { type: 'bold', offset: 0, length: 11 }],
+    ['123', { action: 'send', body: 'Здравствуйте!' }],
     { clientId, requestId, outcome: 'done' },
   ])
 })
@@ -50,12 +53,8 @@ Deno.test('sends the connect and finish notices as specified', async () => {
   const { handle, events } = fixture()
   equal((await handle(request('connect'))).status, 200)
   equal((await handle(request('finish'))).status, 200)
-  deepStrictEqual(events[1], ['123', '🟢 Менеджер подключился', {
-    type: 'italic', offset: 3, length: 'Менеджер подключился'.length,
-  }])
-  deepStrictEqual(events[4], ['123', '⚪ Менеджер завершил диалог', {
-    type: 'italic', offset: 2, length: 'Менеджер завершил диалог'.length,
-  }])
+  deepStrictEqual(events[1], ['123', { action: 'connect', body: 'Менеджер подключился' }])
+  deepStrictEqual(events[4], ['123', { action: 'finish', body: 'Менеджер завершил диалог' }])
 })
 
 Deno.test('rejects unauthorized requests, conflicting ownership and duplicate delivery', async () => {
@@ -82,7 +81,7 @@ Deno.test('validates action and text before reserving delivery', async () => {
 
 Deno.test('returns 429 and skips Telegram delivery when the database quota is full', async () => {
   const { handle, events } = fixture({
-    begin: () => Promise.resolve({ status: 'rate_limited', retry_after: 42 }),
+    begin: () => Promise.resolve({ status: 'rate_limited', retryAfter: 42 }),
   })
   const response = await handle(request('send', 'Текст'))
   equal(response.status, 429)
@@ -113,7 +112,19 @@ Deno.test('Telegram sender bolds only the heading and sends the reply as literal
     })
     return Response.json({ ok: true })
   })
-  equal(await send('123', '🎧 Менеджер\n\n<b>Текст & _</b>', {
-    type: 'bold', offset: 0, length: 11,
-  }), 'done')
+  equal(await send('123', { action: 'send', body: '<b>Текст & _</b>' }), 'done')
+})
+
+Deno.test('Telegram sender includes the notice marker and italicizes its body', async () => {
+  const messages: unknown[] = []
+  const send = createTelegramSender('test', async (_url, options) => {
+    messages.push(JSON.parse(String(options?.body)))
+    return Response.json({ ok: true })
+  })
+  await send('123', { action: 'connect', body: 'Вход' })
+  await send('123', { action: 'finish', body: 'Выход' })
+  deepStrictEqual(messages, [
+    { chat_id: '123', text: '🟢 Вход', entities: [{ type: 'italic', offset: 3, length: 4 }] },
+    { chat_id: '123', text: '⚪ Выход', entities: [{ type: 'italic', offset: 2, length: 5 }] },
+  ])
 })

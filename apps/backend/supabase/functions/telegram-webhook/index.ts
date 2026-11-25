@@ -1,59 +1,35 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
-import { createSupabaseAdminClient } from '../_shared/supabase-admin.ts'
+import { createSupabaseAdminClient } from '../_shared/infrastructure/supabase-admin.ts'
 import { createAnswerKnowledgeQuestion } from './application/use-cases/answer-knowledge-question.ts'
-import { createProcessTelegramUpdate } from './application/use-cases/process-telegram-update.ts'
-import { createSupabaseMessageRepository } from './infrastructure/database/supabase-message-repository.ts'
+import { createProcessBotMessage } from './application/use-cases/process-bot-message.ts'
+import { createReplyToQuestion } from './application/use-cases/reply-to-question.ts'
+import { createSupabaseBotData } from './infrastructure/database/supabase-bot-data.ts'
 import { createGeminiEmbeddings } from './infrastructure/gemini/gemini-embeddings.ts'
 import { createGeminiKnowledgeAnswer } from './infrastructure/gemini/gemini-knowledge.ts'
 import { createTelegramWebhookController } from './presentation/http/telegram-webhook-controller.ts'
-import { createTelegramKnowledgeHandler } from './presentation/telegram/handlers/telegram-knowledge-handler.ts'
-import {
-  getPrivateTelegramUserId,
-  toIncomingTelegramMessage,
-  toOutgoingTelegramMessage,
-} from './presentation/telegram/telegram-message-mapper.ts'
+import { createTelegramUpdateAdapter } from './presentation/telegram/telegram-update-adapter.ts'
 
 const webhookSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY')?.trim()
 const geminiModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.5-flash-lite'
-
 const supabase = createSupabaseAdminClient()
+const botData = supabase ? createSupabaseBotData(supabase) : undefined
 const embeddings = geminiApiKey ? createGeminiEmbeddings(geminiApiKey) : undefined
-const answerQuestion = supabase && geminiApiKey && embeddings
+const answerQuestion = botData && geminiApiKey && embeddings
   ? createAnswerKnowledgeQuestion({
     answer: createGeminiKnowledgeAnswer({ apiKey: geminiApiKey, model: geminiModel }),
     async search(question) {
-      const embedding = await embeddings.embedQuestion(question)
-      const { data, error } = await supabase.rpc('search_knowledge_vector', {
-        p_embedding: JSON.stringify(embedding),
-      })
-      if (error) throw error
-      return data
+      return await botData.searchKnowledge(await embeddings.embedQuestion(question))
     },
   })
   : async () => { throw new Error('Knowledge answer is not configured') }
-const handleTelegramUpdate = createTelegramKnowledgeHandler({ answerQuestion })
-const messageRepository = supabase
-  ? createSupabaseMessageRepository(supabase)
-  : undefined
-const processTelegramUpdate = supabase && messageRepository
-  ? createProcessTelegramUpdate({
-    messageRepository,
-    handleUpdate: handleTelegramUpdate,
-    async isManaged(update) {
-      const userId = getPrivateTelegramUserId(update)
-      if (!userId) return false
-      const { data, error } = await supabase.rpc('inbox_manager_is_active', { p_user_telegram_id: userId })
-      if (error) throw error
-      return data === true
-    },
-    toIncomingMessage: toIncomingTelegramMessage,
-    toOutgoingMessage: toOutgoingTelegramMessage,
-  })
-  : undefined
-const handleRequest = createTelegramWebhookController({
-  webhookSecret,
-  processTelegramUpdate,
-})
 
-export default { fetch: handleRequest }
+const processTelegramUpdate = botData
+  ? createTelegramUpdateAdapter(createProcessBotMessage({
+    messageRepository: botData.messageRepository,
+    reply: createReplyToQuestion(answerQuestion),
+    isManaged: botData.isManaged,
+  }))
+  : undefined
+
+export default { fetch: createTelegramWebhookController({ webhookSecret, processTelegramUpdate }) }

@@ -1,7 +1,7 @@
 import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 import { createAnswerKnowledgeQuestion } from '@backend/supabase/functions/telegram-webhook/application/use-cases/answer-knowledge-question.ts'
 import { createGeminiKnowledgeAnswer } from '@backend/supabase/functions/telegram-webhook/infrastructure/gemini/gemini-knowledge.ts'
-import { createTelegramKnowledgeHandler } from '@backend/supabase/functions/telegram-webhook/presentation/telegram/handlers/telegram-knowledge-handler.ts'
+import { createReplyToQuestion } from '@backend/supabase/functions/telegram-webhook/application/use-cases/reply-to-question.ts'
 
 const update = { message: { chat: { type: 'private', id: 123 }, text: 'Сколько стоит гистероскопия?' } }
 const matches = { tariffs: [{ amount: '150.00', currency: 'BYN' }], chunks: [] }
@@ -17,8 +17,8 @@ function answerResponse() {
 
 Deno.test('searches with the original question and generates one grounded reply', async () => {
   const calls: string[] = []
-  const handler = createTelegramKnowledgeHandler({
-    answerQuestion: createAnswerKnowledgeQuestion({
+  const handler = createReplyToQuestion(
+    createAnswerKnowledgeQuestion({
       search: async (question) => {
         strictEqual(question, update.message.text)
         calls.push('search')
@@ -38,40 +38,32 @@ Deno.test('searches with the original question and generates one grounded reply'
         },
       }),
     }),
-  })
+  )
 
-  deepStrictEqual(await handler(update), { method: 'sendMessage', chat_id: 123, text: 'Стоимость — 150 BYN.' })
+  strictEqual(await handler(update.message.text), 'Стоимость — 150 BYN.')
   deepStrictEqual(calls, ['search', 'generate'])
 })
 
 Deno.test('an empty vector search asks for clarification without calling the generation model', async () => {
-  const handler = createTelegramKnowledgeHandler({
-    answerQuestion: createAnswerKnowledgeQuestion({
+  const handler = createReplyToQuestion(
+    createAnswerKnowledgeQuestion({
       search: async () => ({ tariffs: [], chunks: [] }),
       answer: () => { throw new Error('Should not generate an answer') },
     }),
-  })
+  )
 
-  deepStrictEqual(await handler(update), {
-    method: 'sendMessage',
-    chat_id: 123,
-    text: 'В справочнике не нашёл ответа. Уточните название услуги или свой вопрос.',
-  })
+  strictEqual(await handler(update.message.text), 'В справочнике не нашёл ответа. Уточните название услуги или свой вопрос.')
 })
 
 Deno.test('a vector search failure gives the user a temporary error message', async () => {
-  const handler = createTelegramKnowledgeHandler({
-    answerQuestion: createAnswerKnowledgeQuestion({
+  const handler = createReplyToQuestion(
+    createAnswerKnowledgeQuestion({
       search: () => { throw new Error('Embedding endpoint unavailable') },
       answer: () => { throw new Error('Should not generate an answer') },
     }),
-  })
+  )
 
-  deepStrictEqual(await handler(update), {
-    method: 'sendMessage',
-    chat_id: 123,
-    text: 'Справочник временно недоступен. Попробуйте ещё раз позже.',
-  })
+  strictEqual(await handler(update.message.text), 'Справочник временно недоступен. Попробуйте ещё раз позже.')
 })
 
 Deno.test('retries a transient Gemini 503 within the same request deadline', async () => {
