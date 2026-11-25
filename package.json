@@ -10,6 +10,8 @@
     "test": "pnpm -r run test",
     "test:frontend": "pnpm --filter @fullstack-bot/frontend test",
     "test:backend": "pnpm --filter @fullstack-bot/backend test",
+    "test:integration": "pnpm --filter @fullstack-bot/frontend test:integration",
+    "test:e2e": "pnpm --filter @fullstack-bot/frontend test:e2e",
     "test:watch": "pnpm -r --parallel run test:watch",
     "test:db": "pnpm --filter @fullstack-bot/backend test:db",
     "knowledge:import": "pnpm --filter @fullstack-bot/backend knowledge:import",

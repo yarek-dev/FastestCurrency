@@ -50,6 +50,20 @@ pnpm typecheck
 pnpm test
 ```
 
-`pnpm test` запускает unit-тесты обоих приложений. Для выборочного запуска используйте `pnpm test:frontend` и `pnpm test:backend`; `pnpm test:watch` наблюдает оба приложения. SQL-тесты запускаются отдельно через `pnpm test:db` и требуют локального Supabase с Docker. `pnpm deploy:backend` развёртывает Edge Functions; миграции применяются отдельно командой `pnpm supabase db push`. GitHub workflow развёртывания backend выполняет оба шага.
+`pnpm test` запускает быстрые unit- и компонентные тесты. Для выборочного запуска используйте `pnpm test:frontend` и `pnpm test:backend`. Команда `pnpm test:watch` следит за изменениями в обоих приложениях.
+
+Для интеграционных и браузерных проверок запустите Docker и выполните из корня:
+
+```powershell
+pnpm supabase start
+pnpm test:db
+pnpm test:integration
+pnpm --filter @fullstack-bot/frontend exec playwright install chromium
+pnpm test:e2e
+```
+
+SQL-тесты проверяют PostgreSQL и RPC. HTTP-тесты проверяют контракты Edge Functions через локальный Supabase. E2E запускает Vite и проходит успешный сценарий администратора в Chromium. Тесты создают временные записи и удаляют их после прогона. Если тестовый Supabase запущен с другим рабочим каталогом или портом, передайте его локальные параметры через `TEST_SUPABASE_URL`, `TEST_SUPABASE_ANON_KEY` и `TEST_SUPABASE_SERVICE_ROLE_KEY`. GitHub Actions запускает все уровни тестирования на pull request и при обновлении `main`.
+
+`pnpm deploy:backend` развёртывает Edge Functions. Миграции применяются отдельно командой `pnpm supabase db push`. GitHub workflow развёртывания backend выполняет оба шага.
 
 Инструкции по бэкенду: [apps/backend/README.md](apps/backend/README.md).
