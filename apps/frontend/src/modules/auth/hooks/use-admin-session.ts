@@ -1,23 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
-import { SWRConfig } from 'swr'
-import { Button } from '@frontend/src/components/ui/button'
-import { getInboxClient } from '@frontend/src/lib/supabase'
-import { ChatsPage } from '../chats'
-import { swrOptions } from '../chats/api/swr-config'
-import { LoginForm } from './login-form'
-import styles from './admin-panel.module.css'
 
-const inboxCache = { ...swrOptions, provider: () => new Map() }
-
-export function AdminPanel() {
-  const client = getInboxClient()
-  return client
-    ? <AdminSession client={client} />
-    : <main className={styles.page}><p role="alert">Подключение к Supabase не настроено.</p></main>
-}
-
-function AdminSession({ client }: { client: SupabaseClient }) {
+export function useAdminSession(client: SupabaseClient) {
   const [session, setSession] = useState<Session | null>()
   const [access, setAccess] = useState<{ userId: string; status: 'allowed' | 'denied' | 'failed' }>()
   const [accessAttempt, setAccessAttempt] = useState(0)
@@ -78,33 +62,20 @@ function AdminSession({ client }: { client: SupabaseClient }) {
   }
 
   const status = userId && access?.userId === userId ? access.status : undefined
-  if (userId && status === 'allowed') {
-    return (
-      <SWRConfig key={userId} value={inboxCache}>
-        <ChatsPage adminUserId={userId} headerAction={
-          <>
-            {signOutError && <span className={styles.error} role="alert">Не удалось выйти.</span>}
-            <Button variant="outline" size="sm" disabled={signingOut} onClick={signOut}>Выйти</Button>
-          </>
-        } />
-      </SWRConfig>
-    )
+
+  function retryAccess() {
+    setAccess(undefined)
+    setAccessAttempt(attempt => attempt + 1)
   }
 
-  return (
-    <main className={styles.page}>
-      <section className={styles.card}>
-        {session === undefined || (userId && !status)
-          ? <p role="status">Проверяем сессию…</p>
-          : status === 'failed'
-            ? <>
-                <p role="alert">Не удалось проверить доступ к админ-панели.</p>
-                <Button onClick={() => { setAccess(undefined); setAccessAttempt(attempt => attempt + 1) }}>Повторить</Button>
-                <Button variant="ghost" disabled={signingOut} onClick={signOut}>Выйти</Button>
-                {signOutError && <p className={styles.error} role="alert">Не удалось выйти.</p>}
-              </>
-            : <LoginForm signIn={signIn} message={status === 'denied' ? 'У этого аккаунта нет доступа к админ-панели.' : undefined} />}
-      </section>
-    </main>
-  )
+  return {
+    userId,
+    status,
+    checkingSession: session === undefined || Boolean(userId && !status),
+    signingOut,
+    signOutError,
+    signIn,
+    signOut,
+    retryAccess,
+  }
 }

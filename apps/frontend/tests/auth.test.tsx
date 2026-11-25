@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 import { adminAuthFetch } from '@frontend/src/lib/supabase'
-import { LoginForm } from '@frontend/src/modules/auth/login-form'
+import { LoginForm } from '@frontend/src/modules/auth/components/login-form'
 
 afterEach(() => vi.unstubAllGlobals())
 

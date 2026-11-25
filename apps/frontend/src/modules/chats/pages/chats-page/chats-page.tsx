@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ThemeSwitch } from "@frontend/src/components/theme-switch/theme-switch";
 import type { ReactNode } from "react";
+import { SWRConfig } from "swr";
 import { Alert, AlertDescription } from "@frontend/src/components/ui/alert";
 import { Button } from "@frontend/src/components/ui/button";
 import { ChatList } from "./components/chat-list";
@@ -8,8 +9,24 @@ import { Conversation } from "./components/conversation";
 import { useChats } from "@frontend/src/modules/chats/hooks/use-chats";
 import styles from "./chats-page.module.css";
 import type { ConversationPosition } from "@frontend/src/modules/chats/hooks/use-conversation-scroll";
+import { swrOptions } from "../../api/swr-config";
 
-export function ChatsPage({ adminUserId, headerAction }: { adminUserId: string; headerAction?: ReactNode }) {
+interface ChatsPageProps {
+    adminUserId: string;
+    headerAction?: ReactNode;
+}
+
+const inboxCache = { ...swrOptions, provider: () => new Map() };
+
+export function ChatsPage(props: ChatsPageProps) {
+    return (
+        <SWRConfig key={props.adminUserId} value={inboxCache}>
+            <ChatsWorkspace {...props} />
+        </SWRConfig>
+    );
+}
+
+function ChatsWorkspace({ adminUserId, headerAction }: ChatsPageProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const { chats, selectedChat, history, loading, error, retryClients } = useChats(selectedId);
     const [conversationOpen, setConversationOpen] = useState(false);

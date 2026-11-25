@@ -16,6 +16,7 @@ interface InboxFixture {
   clientId: string
   clientName: string
   addMessages: (bodies: string[], createdAt?: string) => Promise<void>
+  renameClient: (name: string) => Promise<void>
   revokeInboxAccess: () => Promise<void>
 }
 
@@ -45,6 +46,9 @@ export const test = base.extend<{ inbox: InboxFixture }>({
             client_id: clientId, messenger_user_id: fixtureId, messenger_type: 'telegram',
             author: 'test_client', body, created_at: createdAt,
           }))), 'seed test messages')
+        },
+        async renameClient(name) {
+          checked(await db.from('clients').update({ first_name: name }).eq('id', clientId), 'rename test client')
         },
         async revokeInboxAccess() {
           checked(await db.from('inbox_admins').delete().eq('user_id', user.id), 'revoke inbox access')
