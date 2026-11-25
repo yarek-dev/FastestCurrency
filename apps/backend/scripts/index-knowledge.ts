@@ -19,16 +19,15 @@ async function main() {
   while (true) {
     const { data, error } = await supabase.rpc('pending_knowledge_embeddings', { p_limit: 32 })
     if (error) throw new Error(`Could not read pending embeddings (${error.code})`)
-    const pending: Array<{ content_hash: string; content: string }> = data
+    const pending: Array<{ content: string }> = data
     if (pending.length === 0) break
 
     const vectors = await embedDocuments(pending.map(({ content }) => content))
-    const rows = pending.map(({ content_hash }, index) => ({
-      content_hash,
+    const rows = pending.map(({ content }, index) => ({
+      content,
       embedding: JSON.stringify(vectors[index]),
     }))
-    const { error: writeError } = await supabase.from('knowledge_embeddings')
-      .upsert(rows, { onConflict: 'content_hash', ignoreDuplicates: true })
+    const { error: writeError } = await supabase.rpc('save_knowledge_embeddings', { p_rows: rows })
     if (writeError) throw new Error(`Could not save embeddings (${writeError.code})`)
 
     processed += pending.length
