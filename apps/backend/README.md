@@ -22,15 +22,16 @@ supabase/
 ├── config.toml
 ├── functions/deno.json           # общий import map всех Edge Functions
 ├── functions/deno.lock           # общие зафиксированные Deno-зависимости
-├── functions/_shared/           # CORS и серверный Supabase-клиент
-├── functions/clients/           # список клиентов и превью сообщений
+├── functions/_shared/           # общие порты, адаптеры Supabase и CORS
+├── functions/admin-auth/        # сессия администратора и адаптер Supabase Auth
+├── functions/clients/           # HTTP-адаптер списка клиентов
 ├── functions/messages/          # история, курсорная пагинация и действия менеджера
 ├── functions/profile/           # учебный endpoint профиля
 ├── functions/telegram-webhook/
-│   ├── index.ts                 # composition root и HTTP-адаптер
+│   ├── index.ts                 # composition root
 │   ├── application/             # сценарии и порты
 │   ├── infrastructure/          # Gemini API и Supabase
-│   └── presentation/            # разбор и обработка Telegram update
+│   └── presentation/            # входные адаптеры HTTP и Telegram
 ├── migrations/                  # PostgreSQL, RPC и Realtime/RLS
 └── tests/
     ├── unit/                    # Deno unit-тесты
@@ -44,7 +45,7 @@ scripts/
 deno.json                       # локальные проверки и скрипты, общий import map
 ```
 
-Сценарии из `application` получают реализации зависимостей через `index.ts`.
+Бэкенд использует гексагональную архитектуру. Сценарии из `application` получают реализации портов через `index.ts` каждой Edge Function. Входные адаптеры разбирают запросы и формируют ответы. Выходные адаптеры обращаются к Supabase, Telegram и Gemini. [Описание архитектуры](../../docs/architecture/README.md).
 
 ## Требования
 

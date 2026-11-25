@@ -7,6 +7,8 @@ Telegram-справочник платных услуг медцентра от�
 - `apps/frontend/` — React, TanStack Router и компоненты shadcn/ui.
 - `apps/frontend/src/main.tsx` — входная точка React.
 
+На frontend страница администратора связывает feature-модули авторизации и чатов через их публичные API. Backend использует гексагональную архитектуру с входными и выходными адаптерами для Edge Functions. [Архитектура Fullstack Bot](docs/architecture/README.md).
+
 Корневые `package.json`, `pnpm-workspace.yaml` и `pnpm-lock.yaml` управляют всем монорепозиторием. Зависимости устанавливаются из корня через `pnpm install`. Единственный Supabase-проект находится в `apps/backend/supabase/`; его конфигурация, функции, миграции и SQL-тесты развиваются вместе.
 
 Общие для Edge Functions import map и Deno lockfile находятся в `apps/backend/supabase/functions/deno.json` и `deno.lock`. `apps/backend/deno.json` подключает их для локальных проверок и скриптов; `supabase/config.toml` подключает тот же import map для каждой развёртываемой функции. Алиасы `@frontend/` и `@backend/` разрешаются относительно своих приложений.
