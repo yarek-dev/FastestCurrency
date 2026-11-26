@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(12);
 
 select ok(to_regclass('public.knowledge_sources') is null
     and to_regclass('public.knowledge_chunks') is null
@@ -22,7 +22,9 @@ select ok(has_function_privilege('service_role', 'public.search_department_knowl
 
 create temp table department_search_vectors as
 select (array[1::real] || array_fill(0::real, array[767]))::extensions.vector as query,
-    (array[-1::real] || array_fill(0::real, array[767]))::extensions.vector as opposite;
+    (array[-1::real] || array_fill(0::real, array[767]))::extensions.vector as opposite,
+    (array[3::real, sqrt(91)::real] || array_fill(0::real, array[766]))::extensions.vector as similarity_030,
+    (array[1::real, sqrt(24)::real] || array_fill(0::real, array[766]))::extensions.vector as similarity_020;
 grant select on department_search_vectors to service_role;
 
 set local role service_role;
@@ -31,11 +33,18 @@ insert into public.paid_services (kind, title, audience, price_type, amount, max
 select 'tariff', 'Test scan', 'foreign_patients', 'range', 100, 125, query from department_search_vectors;
 insert into public.paid_services (kind, title, body, embedding)
 select 'booking_rule', 'Test booking', 'Book by phone', query from department_search_vectors;
+insert into public.paid_services (kind, title, body, embedding)
+select 'booking_rule', 'Similarity 0.30', 'Book by phone', similarity_030 from department_search_vectors
+union all select 'booking_rule', 'Similarity 0.20', 'Book by phone', similarity_020 from department_search_vectors;
 insert into public.research_department (kind, title, body, embedding)
 select 'research_area', 'Test lab', 'Research profile', query from department_search_vectors
+union all select 'project', 'Similarity 0.30', 'Research profile', similarity_030 from department_search_vectors
+union all select 'project', 'Similarity 0.20', 'Research profile', similarity_020 from department_search_vectors
 union all select 'project', 'Unrelated project', 'Different topic', opposite from department_search_vectors;
 insert into public.clinical_department (kind, title, body, embedding)
 select 'schedule', 'Test schedule', 'Monday to Friday', query from department_search_vectors
+union all select 'contact', 'Similarity 0.30', 'Contact information', similarity_030 from department_search_vectors
+union all select 'contact', 'Similarity 0.20', 'Contact information', similarity_020 from department_search_vectors
 union all select 'contact', 'Unindexed contact', 'No vector assigned', null from department_search_vectors;
 
 create temp table department_search_result as
@@ -50,6 +59,14 @@ select ok((select result->'researchDepartment' from department_search_result) @>
     '[{"kind":"research_area","title":"Test lab"}]', 'the research table is searchable');
 select ok((select result->'clinicalDepartment' from department_search_result) @>
     '[{"kind":"schedule","title":"Test schedule","body":"Monday to Friday"}]', 'the clinical table is searchable');
+select ok((select result->'paidServices' @> '[{"title":"Similarity 0.30"}]'
+    and result->'researchDepartment' @> '[{"title":"Similarity 0.30"}]'
+    and result->'clinicalDepartment' @> '[{"title":"Similarity 0.30"}]'
+    from department_search_result), 'all three tables return matches at cosine similarity 0.30');
+select ok((select not (result->'paidServices' @> '[{"title":"Similarity 0.20"}]'
+    or result->'researchDepartment' @> '[{"title":"Similarity 0.20"}]'
+    or result->'clinicalDepartment' @> '[{"title":"Similarity 0.20"}]')
+    from department_search_result), 'all three tables exclude matches at cosine similarity 0.20');
 select ok(not ((select result->'researchDepartment' from department_search_result) @>
     '[{"title":"Unrelated project"}]'), 'distant matches are excluded');
 select ok(not ((select result->'clinicalDepartment' from department_search_result) @>
