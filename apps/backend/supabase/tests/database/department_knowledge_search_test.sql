@@ -1,5 +1,19 @@
 begin;
-select plan(8);
+select plan(10);
+
+select ok(to_regclass('public.knowledge_sources') is null
+    and to_regclass('public.knowledge_chunks') is null
+    and to_regclass('public.knowledge_tariffs') is null
+    and to_regclass('public.knowledge_embeddings') is null
+    and to_regclass('public.knowledge_embedding_inputs') is null,
+    'legacy knowledge relations are absent');
+
+select ok(to_regprocedure('public.search_knowledge_vector(extensions.vector)') is null
+    and to_regprocedure('public.pending_knowledge_embeddings(integer)') is null
+    and to_regprocedure('public.save_knowledge_embeddings(jsonb)') is null
+    and to_regprocedure('public.knowledge_tariff_embedding_text(text,text)') is null
+    and to_regprocedure('public.knowledge_chunk_embedding_text(text,text)') is null,
+    'legacy search and indexing functions are absent');
 
 select ok(has_function_privilege('service_role', 'public.search_department_knowledge(extensions.vector)', 'EXECUTE')
     and not has_function_privilege('anon', 'public.search_department_knowledge(extensions.vector)', 'EXECUTE')
