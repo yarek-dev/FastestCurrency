@@ -91,6 +91,33 @@ Deno.test('an empty vector search asks for clarification without calling the gen
   strictEqual(await handler(update.message.text), 'Попробуйте, пожалуйста, сформулировать вопрос иначе. Например, уточните название услуги или отделения.')
 })
 
+Deno.test('offers the verified department number without appending a clarification', async () => {
+  const question = 'Как позвонить доктору Иванову?'
+  const expected = 'Чтобы связаться с доктором Ивановым, позвоните в его отделение по телефону +375 (17) 000-00-01.'
+  const clinicalDepartment = [
+    { id: '1', kind: 'staff', title: 'Доктор Иванов', body: 'Работает в отделении восстановительного лечения.' },
+    { id: '2', kind: 'contact', title: 'Отделение восстановительного лечения', body: 'Телефон +375 (17) 000-00-01.' },
+  ]
+  const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+    ...unusedGuidance,
+    search: async () => ({ paidServices: [], researchDepartment: [], clinicalDepartment }),
+    ...createGeminiKnowledge({
+      apiKey: 'test-key',
+      model: 'test-model',
+      fetchRequest: async (_, init) => {
+        const request = JSON.parse(String(init?.body))
+        const prompt = request.systemInstruction.parts[0].text
+        match(prompt, /Никогда не упоминай предоставленные данные/)
+        match(prompt, /Не выдавай номер отделения за личный номер врача/)
+        match(prompt, /подтверждённый контакт.*needsClarification в false/)
+        return answerResponse(expected)
+      },
+    }),
+  }))
+
+  strictEqual(await handler(question), expected)
+})
+
 Deno.test('passes explicit Belarusian citizen policy questions to Gemini even without search results', async () => {
   const emptyMatches = { paidServices: [], researchDepartment: [], clinicalDepartment: [] }
   const examples = [
@@ -337,7 +364,7 @@ Deno.test('a vector search failure gives the user a temporary error message', as
     }),
   )
 
-  strictEqual(await handler(update.message.text), 'Справочник временно недоступен. Попробуйте ещё раз позже.')
+  strictEqual(await handler(update.message.text), 'Сейчас не могу ответить на ваш вопрос. Пожалуйста, напишите чуть позже.')
 })
 
 Deno.test('retries a transient Gemini 503 within the same request deadline', async () => {

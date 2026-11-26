@@ -33,7 +33,7 @@ export function createReplyToQuestion(answerQuestion: AnswerKnowledgeQuestion) {
       return `${answer.text.slice(0, 4000 - nextStep.length - 2).trimEnd()}\n\n${nextStep}`
     } catch (error) {
       console.warn('Knowledge answer failed', error instanceof Error ? error.name : 'Unknown error')
-      return 'Справочник временно недоступен. Попробуйте ещё раз позже.'
+      return 'Сейчас не могу ответить на ваш вопрос. Пожалуйста, напишите чуть позже.'
     }
   }
 }
