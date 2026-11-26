@@ -6,7 +6,7 @@ export function createSupabaseBotData(supabase: SupabaseClient) {
   return {
     messageRepository: createSupabaseMessageRepository(supabase),
     async searchKnowledge(embedding: number[]): Promise<KnowledgeMatches> {
-      const { data, error } = await supabase.rpc('search_knowledge_vector', {
+      const { data, error } = await supabase.rpc('search_department_knowledge', {
         p_embedding: JSON.stringify(embedding),
       })
       if (error) throw error

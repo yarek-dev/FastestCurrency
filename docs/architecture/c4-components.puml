@@ -26,7 +26,7 @@ Rel(process_update, bot_data, "Проверяет режим менеджера 
 Rel(process_update, message_repository, "Сохраняет сообщения и передаёт способ прочитать историю", "MessageRepository")
 Rel(message_repository, database, "Записывает клиента и сообщение, читает предыдущие реплики", "Supabase API, service role")
 Rel(message_handler, knowledge_answer, "Передаёт вопрос и доступ к истории")
-Rel(knowledge_answer, bot_data, "Получает тарифы и фрагменты по эмбеддингу вопроса")
+Rel(knowledge_answer, bot_data, "Получает записи платных услуг, научного и клинического отделов по эмбеддингам вопросов")
 Rel(bot_data, database, "Ищет по эмбеддингу и читает режим менеджера", "Supabase RPC, service role")
 Rel(knowledge_answer, gemini_adapter, "Ограничивает историю 2 000 токенов, уточняет запрос и формирует ответ")
 Rel(gemini_adapter, gemini, "Запрашивает число токенов, эмбеддинг или текст", "HTTPS/JSON")

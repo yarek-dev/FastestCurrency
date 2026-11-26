@@ -5,7 +5,24 @@ import { createGeminiKnowledge } from '@backend/supabase/functions/telegram-webh
 import { createReplyToQuestion } from '@backend/supabase/functions/telegram-webhook/application/use-cases/reply-to-question.ts'
 
 const update = { message: { chat: { type: 'private', id: 123 }, text: 'Сколько стоит гистероскопия?' } }
-const matches = { tariffs: [{ amount: '150.00', currency: 'BYN' }], chunks: [] }
+const matches = {
+  paidServices: [{
+    id: '1',
+    kind: 'tariff',
+    title: 'Гистероскопия',
+    body: null,
+    section: 'Гинекология',
+    audience: 'belarus_citizens',
+    unit: null,
+    price_label: null,
+    price_type: 'fixed',
+    amount: '150.00',
+    max_amount: null,
+    effective_from: null,
+  }],
+  researchDepartment: [],
+  clinicalDepartment: [],
+}
 const unusedContext = {
   fitHistory: () => { throw new Error('Should not fit history') },
   rewriteQuestion: () => { throw new Error('Should not rewrite the question') },
@@ -53,12 +70,39 @@ Deno.test('an empty vector search asks for clarification without calling the gen
   const handler = createReplyToQuestion(
     createAnswerKnowledgeQuestion({
       ...unusedContext,
-      search: async () => ({ tariffs: [], chunks: [] }),
+      search: async () => ({ paidServices: [], researchDepartment: [], clinicalDepartment: [] }),
       answer: () => { throw new Error('Should not generate an answer') },
     }),
   )
 
   strictEqual(await handler(update.message.text), 'В справочнике не нашёл ответа. Уточните название услуги или свой вопрос.')
+})
+
+Deno.test('searches each question and gives one reply with records from all three tables', async () => {
+  const questions = ['Сколько стоит гистероскопия?', 'Какие есть научные лаборатории?', 'Когда работает поликлиника?']
+  const searches: string[] = []
+  const researchDepartment = [{ id: '1', kind: 'research_area', title: 'Лаборатория генетики', body: 'Генетические исследования' }]
+  const clinicalDepartment = [{ id: '1', kind: 'schedule', title: 'Поликлиника', body: 'Будни с 08:00 до 20:00' }]
+  const message = questions.join(' ')
+  const answerQuestion = createAnswerKnowledgeQuestion({
+    ...unusedContext,
+    search: async (query) => {
+      searches.push(query)
+      return {
+        ...matches,
+        researchDepartment: query === questions[1] ? researchDepartment : [],
+        clinicalDepartment: query === questions[2] ? clinicalDepartment : [],
+      }
+    },
+    answer: async (question, found) => {
+      strictEqual(question, message)
+      deepStrictEqual(found, { ...matches, researchDepartment, clinicalDepartment })
+      return 'Справка по трём вопросам.'
+    },
+  })
+
+  strictEqual(await answerQuestion(message), 'Справка по трём вопросам.')
+  deepStrictEqual(searches, questions)
 })
 
 Deno.test('keeps the newest history within the token budget and uses it for search and answering', async () => {
