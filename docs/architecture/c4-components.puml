@@ -12,10 +12,10 @@ ContainerDb(database, "Database", "Supabase PostgreSQL", "Хранит пере�
 Container_Boundary(edge_function, "telegram-webhook Edge Function") {
   Component(http_interface, "Telegram Webhook Adapter", "Deno Fetch API", "Проверяет запрос, преобразует Telegram update и формирует webhook action.")
   Component(process_update, "Process Bot Message", "TypeScript", "Сохраняет входящее сообщение и отвечает, пока диалог не ведёт менеджер.")
-  Component(message_repository, "Message Repository", "TypeScript, Supabase client", "Реализует порт сохранения сообщений через RPC.")
+  Component(message_repository, "Message Repository", "TypeScript, Supabase client", "Сохраняет сообщения и читает до 10 предыдущих реплик диалога.")
   Component(message_handler, "Reply to Question", "TypeScript", "Проверяет текст вопроса и подбирает ответ или сообщение об ошибке.")
-  Component(knowledge_answer, "Answer Knowledge Question", "TypeScript", "Получает подходящие записи и формулирует ответ по ним.")
-  Component(gemini_adapter, "Gemini Adapters", "TypeScript, Fetch API", "Векторизуют вопрос и генерируют ответ.")
+  Component(knowledge_answer, "Answer Knowledge Question", "TypeScript", "Учитывает историю диалога при поиске и формулировке ответа по найденным записям.")
+  Component(gemini_adapter, "Gemini Adapters", "TypeScript, Fetch API", "Считают токены истории, уточняют и векторизуют поисковый запрос, генерируют ответ.")
   Component(bot_data, "Bot Data Adapter", "TypeScript, Supabase client", "Читает режим менеджера и ищет сведения в базе знаний.")
 }
 
@@ -23,13 +23,13 @@ Rel(telegram, http_interface, "Передаёт сообщение и получ
 Rel(http_interface, process_update, "Передаёт сообщение и получает текст ответа", "ProcessBotMessage")
 Rel(process_update, message_handler, "Обрабатывает сообщение после проверки режима менеджера")
 Rel(process_update, bot_data, "Проверяет режим менеджера до и после генерации")
-Rel(process_update, message_repository, "Сохраняет входящее сообщение и ответ", "MessageRepository")
-Rel(message_repository, database, "Записывает клиента и сообщение", "Supabase RPC, service role")
-Rel(message_handler, knowledge_answer, "Передаёт вопрос")
+Rel(process_update, message_repository, "Сохраняет сообщения и передаёт способ прочитать историю", "MessageRepository")
+Rel(message_repository, database, "Записывает клиента и сообщение, читает предыдущие реплики", "Supabase API, service role")
+Rel(message_handler, knowledge_answer, "Передаёт вопрос и доступ к истории")
 Rel(knowledge_answer, bot_data, "Получает тарифы и фрагменты по эмбеддингу вопроса")
 Rel(bot_data, database, "Ищет по эмбеддингу и читает режим менеджера", "Supabase RPC, service role")
-Rel(knowledge_answer, gemini_adapter, "Использует эмбеддинг вопроса и формирует ответ по результатам")
-Rel(gemini_adapter, gemini, "Запрашивает эмбеддинг или текст ответа", "HTTPS/JSON")
+Rel(knowledge_answer, gemini_adapter, "Ограничивает историю 2 000 токенов, уточняет запрос и формирует ответ")
+Rel(gemini_adapter, gemini, "Запрашивает число токенов, эмбеддинг или текст", "HTTPS/JSON")
 
 SHOW_LEGEND()
 @enduml

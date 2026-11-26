@@ -11,25 +11,38 @@ const incoming: MessageRecord = {
   createdAt: '2026-09-17T10:00:00.000Z',
 }
 const message = { incoming, replyTo: { text: incoming.body } }
+const messageId = '9007199254740993'
 const replyText = 'Для оплаты выберите медцентр в дереве услуг ЕРИП.'
 
 Deno.test('stores the incoming message, prepares its reply, and stores the outgoing message', async () => {
   const events: unknown[] = []
   const process = createProcessBotMessage({
-    messageRepository: { async save(record) { events.push(record) } },
-    async reply(text) { events.push(text); return replyText },
+    messageRepository: {
+      async save(record) { events.push(record); return messageId },
+      async readPrevious(record, id) {
+        deepStrictEqual(record, incoming)
+        strictEqual(id, messageId)
+        events.push('read history')
+        return [{ role: 'bot', text: 'Previous reply' }]
+      },
+    },
+    async reply(text, readHistory) {
+      deepStrictEqual(await readHistory?.(), [{ role: 'bot', text: 'Previous reply' }])
+      events.push(text)
+      return replyText
+    },
     async isManaged(userId) { strictEqual(userId, incoming.userTelegramId); return false },
   })
   strictEqual(await process(message), replyText)
-  const outgoing = events[2] as MessageRecord
+  const outgoing = events[3] as MessageRecord
   strictEqual(Number.isNaN(Date.parse(outgoing.createdAt)), false)
-  deepStrictEqual(events, [incoming, incoming.body, { ...incoming, author: 'bot', body: replyText, createdAt: outgoing.createdAt }])
+  deepStrictEqual(events, [incoming, 'read history', incoming.body, { ...incoming, author: 'bot', body: replyText, createdAt: outgoing.createdAt }])
 })
 
 Deno.test('stores an incoming message even when its source cannot receive a reply', async () => {
   const saved: MessageRecord[] = []
   const process = createProcessBotMessage({
-    messageRepository: { async save(record) { saved.push(record) } },
+    messageRepository: { async save(record) { saved.push(record); return messageId }, async readPrevious() { return [] } },
     reply: () => { throw new Error('unexpected reply') },
     isManaged: async () => false,
   })
@@ -41,7 +54,7 @@ Deno.test('stores incoming messages during takeover and resumes automatic replie
   const saved: MessageRecord[] = []
   let managed = true
   const process = createProcessBotMessage({
-    messageRepository: { async save(record) { saved.push(record) } },
+    messageRepository: { async save(record) { saved.push(record); return messageId }, async readPrevious() { return [] } },
     reply: async () => replyText,
     isManaged: async () => managed,
   })
@@ -56,7 +69,7 @@ Deno.test('suppresses a reply computed while a manager was connecting', async ()
   let managed = false
   const saved: MessageRecord[] = []
   const process = createProcessBotMessage({
-    messageRepository: { async save(record) { saved.push(record) } },
+    messageRepository: { async save(record) { saved.push(record); return messageId }, async readPrevious() { return [] } },
     async reply() { managed = true; return replyText },
     isManaged: async () => managed,
   })

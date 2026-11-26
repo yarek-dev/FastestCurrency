@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(21);
 
 select has_table('public', 'clients', 'clients table should exist');
 select has_table('public', 'messages', 'messages table should exist');
@@ -185,6 +185,29 @@ select is(
      where user_telegram_id = '9000000002'),
     0,
     'failed message insert should roll back the new client'
+);
+
+create temporary table saved_message_id as
+select public.save_message_text_id(
+    '9000000001', 'Yaroslav', 'Updated', 'yarek_dev',
+    'Saved with text ID', 'telegram', '2026-09-17 10:20:00+00'
+) as id;
+
+select is(
+    (select id from saved_message_id),
+    (select id::text from public.messages where body = 'Saved with text ID'),
+    'save_message_text_id returns the exact ID of the persisted message as text'
+);
+
+select ok(
+    has_function_privilege('service_role', 'public.save_message_text_id(varchar,varchar,varchar,varchar,text,varchar,timestamptz)', 'execute'),
+    'service_role can save a message with a text ID'
+);
+
+select ok(
+    not has_function_privilege('anon', 'public.save_message_text_id(varchar,varchar,varchar,varchar,text,varchar,timestamptz)', 'execute')
+    and not has_function_privilege('authenticated', 'public.save_message_text_id(varchar,varchar,varchar,varchar,text,varchar,timestamptz)', 'execute'),
+    'browser roles cannot save a message with a text ID'
 );
 
 select * from finish();

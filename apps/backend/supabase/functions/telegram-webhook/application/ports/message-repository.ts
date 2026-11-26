@@ -7,6 +7,12 @@ export interface MessageRecord {
   createdAt: string
 }
 
+export interface DialogueMessage {
+  role: 'user' | 'bot'
+  text: string
+}
+
 export interface MessageRepository {
-  save(message: MessageRecord): Promise<void>
+  save(message: MessageRecord): Promise<string>
+  readPrevious(message: MessageRecord, messageId: string): Promise<DialogueMessage[]>
 }

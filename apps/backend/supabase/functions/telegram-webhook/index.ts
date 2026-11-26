@@ -5,7 +5,7 @@ import { createProcessBotMessage } from './application/use-cases/process-bot-mes
 import { createReplyToQuestion } from './application/use-cases/reply-to-question.ts'
 import { createSupabaseBotData } from './infrastructure/database/supabase-bot-data.ts'
 import { createGeminiEmbeddings } from './infrastructure/gemini/gemini-embeddings.ts'
-import { createGeminiKnowledgeAnswer } from './infrastructure/gemini/gemini-knowledge.ts'
+import { createGeminiKnowledge } from './infrastructure/gemini/gemini-knowledge.ts'
 import { createTelegramWebhookController } from './presentation/http/telegram-webhook-controller.ts'
 import { createTelegramUpdateAdapter } from './presentation/telegram/telegram-update-adapter.ts'
 
@@ -17,7 +17,7 @@ const botData = supabase ? createSupabaseBotData(supabase) : undefined
 const embeddings = geminiApiKey ? createGeminiEmbeddings(geminiApiKey) : undefined
 const answerQuestion = botData && geminiApiKey && embeddings
   ? createAnswerKnowledgeQuestion({
-    answer: createGeminiKnowledgeAnswer({ apiKey: geminiApiKey, model: geminiModel }),
+    ...createGeminiKnowledge({ apiKey: geminiApiKey, model: geminiModel }),
     async search(question) {
       return await botData.searchKnowledge(await embeddings.embedQuestion(question))
     },
