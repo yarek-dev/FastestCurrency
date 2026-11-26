@@ -1,6 +1,6 @@
-import { deepStrictEqual, strictEqual } from 'node:assert/strict'
+import { deepStrictEqual, doesNotMatch, match, strictEqual } from 'node:assert/strict'
 import type { DialogueMessage } from '@backend/supabase/functions/telegram-webhook/application/ports/message-repository.ts'
-import { createAnswerKnowledgeQuestion } from '@backend/supabase/functions/telegram-webhook/application/use-cases/answer-knowledge-question.ts'
+import { createAnswerKnowledgeQuestion, type PaidServiceGuidance, type PaidServiceGuidanceKey } from '@backend/supabase/functions/telegram-webhook/application/use-cases/answer-knowledge-question.ts'
 import { createGeminiKnowledge } from '@backend/supabase/functions/telegram-webhook/infrastructure/gemini/gemini-knowledge.ts'
 import { createReplyToQuestion } from '@backend/supabase/functions/telegram-webhook/application/use-cases/reply-to-question.ts'
 
@@ -27,12 +27,22 @@ const unusedContext = {
   fitHistory: () => { throw new Error('Should not fit history') },
   rewriteQuestion: () => { throw new Error('Should not rewrite the question') },
 }
+const unusedGuidance = { readPaidServiceGuidance: () => { throw new Error('Should not read paid service guidance') } }
 
-function answerResponse() {
+function bookingGuidance(guidance_key: PaidServiceGuidanceKey, body: string): PaidServiceGuidance {
+  return {
+    guidance_key, body, kind: 'booking_rule', title: 'Условия обращения', section: null, audience: null,
+    unit: null, price_label: null, price_type: null, amount: null, max_amount: null, effective_from: null,
+  }
+}
+
+function answerResponse(text = 'Стоимость — 150 BYN.', needsClarification = false, needsChildCitizenship = false) {
   return Response.json({
     candidates: [{
       finishReason: 'STOP',
-      content: { parts: [{ thought: true, text: 'hidden' }, { text: 'Стоимость — 150 BYN.' }] },
+      content: { parts: [{ thought: true, text: 'hidden' }, {
+        text: JSON.stringify({ text, needsClarification, needsChildCitizenship }),
+      }] },
     }],
   })
 }
@@ -41,6 +51,7 @@ Deno.test('searches with the original question and generates one grounded reply'
   const calls: string[] = []
   const handler = createReplyToQuestion(
     createAnswerKnowledgeQuestion({
+      ...unusedGuidance,
       search: async (question) => {
         strictEqual(question, update.message.text)
         calls.push('search')
@@ -55,6 +66,7 @@ Deno.test('searches with the original question and generates one grounded reply'
           strictEqual(new Headers(init?.headers).get('x-goog-api-key'), 'test-key')
           const request = JSON.parse(String(init?.body))
           deepStrictEqual(JSON.parse(request.contents[0].parts[0].text), { question: update.message.text, matches })
+          strictEqual(request.generationConfig.responseMimeType, 'application/json')
           strictEqual(request.tools, undefined)
           return answerResponse()
         },
@@ -70,12 +82,148 @@ Deno.test('an empty vector search asks for clarification without calling the gen
   const handler = createReplyToQuestion(
     createAnswerKnowledgeQuestion({
       ...unusedContext,
+      ...unusedGuidance,
       search: async () => ({ paidServices: [], researchDepartment: [], clinicalDepartment: [] }),
       answer: () => { throw new Error('Should not generate an answer') },
     }),
   )
 
-  strictEqual(await handler(update.message.text), 'В справочнике не нашёл ответа. Уточните название услуги или свой вопрос.')
+  strictEqual(await handler(update.message.text), 'Попробуйте, пожалуйста, сформулировать вопрос иначе. Например, уточните название услуги или отделения.')
+})
+
+Deno.test('passes explicit Belarusian citizen policy questions to Gemini even without search results', async () => {
+  const emptyMatches = { paidServices: [], researchDepartment: [], clinicalDepartment: [] }
+  const examples = [
+    ['Сколько стоит МРТ для гражданина РБ?', 'belarus_paid_diagnostics', 'Для граждан РБ платное МРТ не проводится.'],
+    ['Можно ли платно записать ребёнка с гражданством Республики Беларусь?', 'belarus_child_paid_services', 'Детям с гражданством РБ помощь оказывается бесплатно только по направлению.'],
+  ] as const
+  for (const [question, key, expected] of examples) {
+    const guidance = [{ ...bookingGuidance(key, expected), kind: 'availability_rule', audience: 'belarus_citizens' }]
+    const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+      ...createGeminiKnowledge({
+        apiKey: 'test-key',
+        model: 'test-model',
+        fetchRequest: async (_, init) => {
+          const request = JSON.parse(String(init?.body))
+          deepStrictEqual(JSON.parse(request.contents[0].parts[0].text), { question, matches: emptyMatches, guidance })
+          const instruction = request.systemInstruction.parts[0].text
+          doesNotMatch(instruction, /платное МРТ не проводится|бесплатно только по направлению/)
+          match(instruction, /из guidance имеют приоритет над поисковой выдачей/)
+          return answerResponse(expected)
+        },
+      }),
+      search: async () => emptyMatches,
+      readPaidServiceGuidance: async (keys) => {
+        deepStrictEqual(keys, [key])
+        return guidance
+      },
+    }))
+    strictEqual(await handler(question), expected)
+  }
+})
+
+Deno.test('can answer about childbirth and IVF bookings without vector search matches', async () => {
+  const search = async () => ({ paidServices: [], researchDepartment: [], clinicalDepartment: [] })
+  const examples = [
+    ['Сколько стоят платные роды?', 'maternity_booking', 'Запись на роды на сроке 34–36 недель по телефону +375 17 323 52 15.'],
+    ['Как записаться на ЭКО?', 'ivf_booking', 'Позвоните по телефонам +375 (17) 270-77-38 или +375 (17) 232-01-30.'],
+  ] as const
+  for (const [question, key, expected] of examples) {
+    const guidance = [bookingGuidance(key, expected)]
+    const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+      ...createGeminiKnowledge({
+        apiKey: 'test-key',
+        model: 'test-model',
+        fetchRequest: async (_, init) => {
+          const request = JSON.parse(String(init?.body))
+          deepStrictEqual(JSON.parse(request.contents[0].parts[0].text), { question, matches: await search(), guidance })
+          const instruction = request.systemInstruction.parts[0].text
+          doesNotMatch(instruction, /34–36|323 52 15|308,14|4 500|270-77-38|232-01-30/)
+          return answerResponse(expected)
+        },
+      }),
+      search,
+      readPaidServiceGuidance: async (keys) => {
+        if (key === 'ivf_booking') deepStrictEqual(keys, [key])
+        else deepStrictEqual(keys, [
+          key, 'maternity_contract', 'maternity_individual', 'maternity_consultation',
+          'maternity_foreign_natural', 'maternity_foreign_cesarean',
+        ])
+        return guidance
+      },
+    }))
+    strictEqual(await handler(question), expected)
+  }
+})
+
+Deno.test('asks a child’s citizenship without using a generic tariff and accepts the clarification', async () => {
+  const question = 'Какие платные медицинские услуги есть для детей?'
+  const followup = 'РБ'
+  const clarifiedQuery = 'Какие платные услуги есть для ребёнка с гражданством РБ?'
+  const expectedReply = 'Детям с гражданством РБ помощь оказывается бесплатно только по направлению.'
+  const searches: string[] = []
+  const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+    ...createGeminiKnowledge({
+      apiKey: 'test-key',
+      model: 'test-model',
+      fetchRequest: async (_, init) => {
+        const request = JSON.parse(String(init?.body))
+        const payload = JSON.parse(request.contents[0].parts.at(-1).text)
+        deepStrictEqual(payload.matches.paidServices, [])
+        match(request.systemInstruction.parts[0].text, /гражданство ребёнка не названо/)
+        return payload.question === question ? answerResponse('', true, true) : answerResponse(expectedReply)
+      },
+    }),
+    fitHistory: async (history) => history,
+    readPaidServiceGuidance: async () => [{
+      ...bookingGuidance('belarus_child_paid_services', expectedReply), kind: 'availability_rule', audience: 'belarus_citizens',
+    }],
+    rewriteQuestion: async () => clarifiedQuery,
+    search: async (query) => {
+      searches.push(query)
+      return matches
+    },
+  }))
+
+  const firstReply = await handler(question)
+  strictEqual(firstReply, 'Подскажите, пожалуйста, какое гражданство у ребёнка?')
+  strictEqual(await handler(followup, async () => [
+    { role: 'user', text: question },
+    { role: 'bot', text: firstReply },
+  ]), expectedReply)
+  deepStrictEqual(searches, [question, clarifiedQuery])
+})
+
+Deno.test('keeps the confirmed part of a reply and offers a manager on a second clarification', async () => {
+  const confirmed = 'Стоимость — 150 BYN. По условиям записи нужно уточнение.'
+  const history: DialogueMessage[] = []
+  const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+    ...unusedGuidance,
+    ...createGeminiKnowledge({
+      apiKey: 'test-key',
+      model: 'test-model',
+      fetchRequest: async () => answerResponse(history.length ? '' : confirmed, true),
+    }),
+    fitHistory: async (messages) => messages,
+    rewriteQuestion: async () => undefined,
+    search: async () => matches,
+  }))
+
+  const firstReply = await handler('Сколько стоит услуга и как записаться?', async () => history)
+  strictEqual(firstReply, `${confirmed}\n\nПопробуйте, пожалуйста, сформулировать вопрос иначе. Например, уточните название услуги или отделения.`)
+  history.push({ role: 'bot', text: firstReply })
+  let historyReads = 0
+  const secondReply = await handler('А как на неё записаться?', async () => {
+    historyReads++
+    return history
+  })
+  strictEqual(secondReply, 'Если хотите, чтобы вам помог менеджер, напишите «Позовите менеджера».')
+  strictEqual(historyReads, 1)
+})
+
+Deno.test('acknowledges an explicit manager request without asking Gemini', async () => {
+  const handler = createReplyToQuestion(() => { throw new Error('Should not generate an answer') })
+  strictEqual(await handler('Позовите менеджера'), 'Запрос на подключение менеджера сохранён в этом чате.')
 })
 
 Deno.test('searches each question and gives one reply with records from all three tables', async () => {
@@ -86,6 +234,7 @@ Deno.test('searches each question and gives one reply with records from all thre
   const message = questions.join(' ')
   const answerQuestion = createAnswerKnowledgeQuestion({
     ...unusedContext,
+    ...unusedGuidance,
     search: async (query) => {
       searches.push(query)
       return {
@@ -97,11 +246,11 @@ Deno.test('searches each question and gives one reply with records from all thre
     answer: async (question, found) => {
       strictEqual(question, message)
       deepStrictEqual(found, { ...matches, researchDepartment, clinicalDepartment })
-      return 'Справка по трём вопросам.'
+      return { text: 'Справка по трём вопросам.', needsClarification: false }
     },
   })
 
-  strictEqual(await answerQuestion(message), 'Справка по трём вопросам.')
+  deepStrictEqual(await answerQuestion(message), { text: 'Справка по трём вопросам.', needsClarification: false })
   deepStrictEqual(searches, questions)
 })
 
@@ -116,6 +265,7 @@ Deno.test('keeps the newest history within the token budget and uses it for sear
   const checkedLengths: number[] = []
   const prompts: unknown[] = []
   const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+    ...unusedGuidance,
     ...createGeminiKnowledge({
       apiKey: 'test-key',
       model: 'test-model',
@@ -150,6 +300,7 @@ Deno.test('uses the current question alone when history cannot fit or token coun
   for (const countResponse of [Response.json({ totalTokens: 2001 }), new Response(null, { status: 503 })]) {
     const calls: string[] = []
     const handler = createReplyToQuestion(createAnswerKnowledgeQuestion({
+      ...unusedGuidance,
       ...createGeminiKnowledge({
         apiKey: 'test-key',
         model: 'test-model',
@@ -180,6 +331,7 @@ Deno.test('a vector search failure gives the user a temporary error message', as
   const handler = createReplyToQuestion(
     createAnswerKnowledgeQuestion({
       ...unusedContext,
+      ...unusedGuidance,
       search: () => { throw new Error('Embedding endpoint unavailable') },
       answer: () => { throw new Error('Should not generate an answer') },
     }),
@@ -199,7 +351,7 @@ Deno.test('retries a transient Gemini 503 within the same request deadline', asy
     },
   })
 
-  strictEqual(await answer(update.message.text, matches, []), 'Стоимость — 150 BYN.')
+  deepStrictEqual(await answer(update.message.text, matches, []), { text: 'Стоимость — 150 BYN.', needsClarification: false })
   strictEqual(signals.length, 2)
   strictEqual(signals[0], signals[1])
 })

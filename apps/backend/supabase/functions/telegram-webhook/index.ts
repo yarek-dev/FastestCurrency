@@ -18,6 +18,7 @@ const embeddings = geminiApiKey ? createGeminiEmbeddings(geminiApiKey) : undefin
 const answerQuestion = botData && geminiApiKey && embeddings
   ? createAnswerKnowledgeQuestion({
     ...createGeminiKnowledge({ apiKey: geminiApiKey, model: geminiModel }),
+    readPaidServiceGuidance: botData.readPaidServiceGuidance,
     async search(question) {
       return await botData.searchKnowledge(await embeddings.embedQuestion(question))
     },
