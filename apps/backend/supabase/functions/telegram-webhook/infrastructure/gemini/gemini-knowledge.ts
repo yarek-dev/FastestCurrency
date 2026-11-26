@@ -138,7 +138,7 @@ export function createGeminiKnowledge({
     async answer(question: string, matches: KnowledgeMatches, history: DialogueMessage[], guidance: PaidServiceGuidance[] = []): Promise<KnowledgeAnswer> {
       const result = await generate(
         JSON.stringify({ question, matches, ...(guidance.length ? { guidance } : {}) }),
-        history, instruction, 1024, AbortSignal.timeout(12000), answerFormat,
+        history, instruction, 1024, AbortSignal.timeout(20_000), answerFormat,
       )
       if (!result) throw new Error('Gemini answer is incomplete')
       const answer: Partial<KnowledgeAnswer> | null = JSON.parse(result)

@@ -369,6 +369,7 @@ Deno.test('a vector search failure gives the user a temporary error message', as
 
 Deno.test('retries a transient Gemini 503 within the same request deadline', async () => {
   const signals: Array<AbortSignal | null | undefined> = []
+  const deadlines: number[] = []
   const { answer } = createGeminiKnowledge({
     apiKey: 'test-key',
     model: 'test-model',
@@ -378,7 +379,17 @@ Deno.test('retries a transient Gemini 503 within the same request deadline', asy
     },
   })
 
-  deepStrictEqual(await answer(update.message.text, matches, []), { text: 'Стоимость — 150 BYN.', needsClarification: false })
+  const originalTimeout = AbortSignal.timeout
+  AbortSignal.timeout = (milliseconds) => {
+    deadlines.push(milliseconds)
+    return originalTimeout(milliseconds)
+  }
+  try {
+    deepStrictEqual(await answer(update.message.text, matches, []), { text: 'Стоимость — 150 BYN.', needsClarification: false })
+  } finally {
+    AbortSignal.timeout = originalTimeout
+  }
+  deepStrictEqual(deadlines, [20_000])
   strictEqual(signals.length, 2)
   strictEqual(signals[0], signals[1])
 })
